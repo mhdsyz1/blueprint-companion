@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0A0118">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Blueprint">
+  <link rel="apple-touch-icon" href="icon.png">
   <title>Blueprint</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -303,7 +308,6 @@
     /* Dua footer */
     .doubt-dua { text-align:center; padding:24px 20px; }
     .doubt-dua-text { font-size:18px; color:rgba(255,255,255,0.2); font-family:'JetBrains Mono',monospace; letter-spacing:0.05em; }
-
 
     /* ── SYNC STATUS PILL ── */
     /*
@@ -779,7 +783,6 @@
   <button class="nav-btn"        data-page="doubt"     onclick="goPage('doubt')"><div class="nav-icon">&#9825;</div><span>Doubt</span></button>
 </nav>
 
-
 <!-- DOUBT MODE -->
 <div class="page" id="page-doubt">
   <div class="topbar">
@@ -833,7 +836,6 @@
   const _SB_URL = 'https://enefudfxixpoeogeleem.supabase.co';
   const _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuZWZ1ZGZ4aXhwb2VvZ2VsZWVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyOTg1NTksImV4cCI6MjA5NTg3NDU1OX0.6LfokuUb2-QecWpCQYZGgT5qRqjGIg5r2DYhjhQjGDI';
   const sb = window.supabase.createClient(_SB_URL, _SB_KEY);
-  window.bp_sb = sb; // exposed for console testing
 
   // These keys are local-only — never sent to Supabase
   const _NO_SYNC = new Set(['debts_seeded_v3','savings_seeded_v1','spus_value']);
@@ -1253,7 +1255,6 @@
 
   function deleteExpense(id) { const exp=STORE.get('expenses_'+currentExpenseMonth,[]); STORE.set('expenses_'+currentExpenseMonth,exp.filter(e=>e.id!==id)); renderExpensesTab(); }
 
-
   // ── DOUBT MODE ────────────────────────────────────────────────────────────
   //
   // VERSES array — each entry has:
@@ -1345,7 +1346,6 @@
     renderVerse();
   }
 
-
   // ── SYNC STATUS ───────────────────────────────────────
   function setSyncStatus(s) {
     const pill  = document.getElementById('sync-pill');
@@ -1376,7 +1376,6 @@
   // Pull everything from Supabase → write to localStorage → re-render.
   // Called once on app load and again when coming back online.
   async function syncDown() {
-    console.log('[Blueprint sync] syncDown starting, online:', navigator.onLine);
     if (!navigator.onLine) { setSyncStatus('offline'); return; }
     setSyncStatus('syncing');
     try {
@@ -1400,7 +1399,6 @@
         // Supabase is empty — push whatever is in localStorage (first-time sync)
         const localDebts = STORE.get('debts', []);
         if (localDebts.length) {
-          console.log('[Blueprint sync] Supabase debts empty — pushing', localDebts.length, 'local debts');
           await sb.from('debts').upsert(localDebts.map(debtToRow), { onConflict:'id' });
         }
       }
@@ -1413,7 +1411,6 @@
       } else {
         const localSavings = STORE.get('savings', []);
         if (localSavings.length) {
-          console.log('[Blueprint sync] Supabase savings empty — pushing', localSavings.length, 'local buckets');
           await sb.from('savings').upsert(localSavings.map(s => ({ id:s.id, name:s.name, balance:s.balance, target:s.target })), { onConflict:'id' });
         }
       }
@@ -1472,7 +1469,6 @@
   // Called automatically by STORE.set.
   // If offline: queues the key in bp__dirty for later.
   async function _syncUp(key, val) {
-    console.log('[Blueprint sync] _syncUp called:', key);
     if (!navigator.onLine) {
       // Queue for when we're back online
       const dirty = JSON.parse(localStorage.getItem('bp__dirty') || '[]');
@@ -1594,5 +1590,15 @@
   });
   window.addEventListener('offline', () => setSyncStatus('offline'));
 </script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/blueprint-companion/sw.js')
+        .catch(err => console.error('SW registration failed:', err));
+    });
+  }
+</script>
+
 </body>
 </html>
