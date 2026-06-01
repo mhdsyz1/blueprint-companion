@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0A0118">
+  <title>Blueprint</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#0A0118; --surface:rgba(255,255,255,0.04); --border:rgba(255,255,255,0.08); --text:#FFFFFF; --text-dim:rgba(255,255,255,0.6); --accent:#B5FF3A; --accent-2:#7C5CFF; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background: radial-gradient(ellipse 800px 600px at 10% -10%, rgba(124,92,255,0.25), transparent 60%), radial-gradient(ellipse 600px 500px at 90% 100%, rgba(181,255,58,0.1), transparent 50%), var(--bg); background-attachment:fixed; color:var(--text); font-family:'Inter',-apple-system,sans-serif; min-height:100vh; padding:24px 20px 100px; max-width:520px; margin:0 auto; letter-spacing:-0.011em; }
+    .page { display:none; } .page.active { display:block; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:8px 0 20px; }
+    .topbar-greet { font-size:13px; color:var(--text-dim); }
+    .topbar-greet strong { color:var(--text); font-weight:600; }
+    .topbar-status { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); padding:6px 10px; background:var(--surface); border:1px solid var(--border); border-radius:100px; }
+    .eyebrow { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.08em; color:var(--accent); text-transform:uppercase; margin-bottom:10px; font-weight:500; }
+    .title { font-size:34px; font-weight:800; color:var(--text); margin-bottom:8px; line-height:1.05; letter-spacing:-0.03em; }
+    .subtitle { font-size:15px; color:var(--text-dim); margin-bottom:28px; line-height:1.55; }
+    .hero { background:linear-gradient(135deg,rgba(124,92,255,0.2),transparent 70%),linear-gradient(225deg,rgba(181,255,58,0.08),transparent 70%),var(--surface); border:1px solid rgba(255,255,255,0.14); border-radius:28px; padding:28px 24px 32px; margin-bottom:16px; position:relative; overflow:hidden; backdrop-filter:blur(20px); }
+    .hero::before { content:''; position:absolute; top:-50%; right:-50%; width:100%; height:100%; background:radial-gradient(circle,rgba(181,255,58,0.12),transparent 60%); pointer-events:none; }
+    .hero-label { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:14px; font-weight:500; position:relative; }
+    .hero-days { font-size:96px; font-weight:800; line-height:0.95; letter-spacing:-0.06em; background:linear-gradient(135deg,#FFFFFF 0%,#B5FF3A 80%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; position:relative; margin-bottom:6px; }
+    .hero-suffix { font-size:13px; color:var(--text-dim); position:relative; margin-bottom:18px; }
+    .hero-date { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text); display:inline-flex; align-items:center; gap:8px; padding:7px 12px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:100px; position:relative; }
+    .reminders { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+    .reminder-item { display:flex; align-items:center; gap:10px; padding:11px 16px; background:rgba(255,184,0,0.06); border:1px solid rgba(255,184,0,0.2); border-radius:12px; font-size:13px; color:#FFB800; font-weight:500; line-height:1.4; }
+    .reminder-icon { font-size:14px; flex-shrink:0; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:18px 20px; margin-bottom:12px; backdrop-filter:blur(20px); }
+    .card.featured { background:linear-gradient(135deg,rgba(181,255,58,0.1),rgba(124,92,255,0.06)); border-color:rgba(181,255,58,0.25); }
+    .card.urgent { background:linear-gradient(135deg,rgba(255,92,124,0.1),rgba(255,184,0,0.05)); border-color:rgba(255,92,124,0.25); }
+    .card.focus { background:linear-gradient(135deg,rgba(0,229,255,0.07),rgba(124,92,255,0.05)); border-color:rgba(0,229,255,0.18); }
+    .card-pill { display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; padding:4px 10px; border-radius:100px; background:rgba(181,255,58,0.15); color:var(--accent); margin-bottom:10px; }
+    .card-pill.urgent { background:rgba(255,92,124,0.15); color:#FF5C7C; }
+    .card-pill.cyan   { background:rgba(0,229,255,0.12); color:#00E5FF; }
+    .card-title { font-size:17px; font-weight:600; color:var(--text); margin-bottom:6px; letter-spacing:-0.015em; }
+    .card-desc { font-size:14px; color:var(--text-dim); line-height:1.55; }
+    .focus-link { display:inline-flex; align-items:center; gap:5px; font-size:13px; font-weight:600; color:#00E5FF; margin-top:10px; text-decoration:none; opacity:0.85; transition:opacity 0.2s; }
+    .focus-link:hover { opacity:1; }
+    .section-heading { display:flex; align-items:center; justify-content:space-between; margin:28px 0 14px; }
+    .section-heading h3 { font-size:13px; font-weight:600; color:var(--text); text-transform:uppercase; letter-spacing:0.06em; font-family:'JetBrains Mono',monospace; }
+    .workout-card { background:linear-gradient(135deg,rgba(181,255,58,0.06),rgba(124,92,255,0.04)); border:1px solid rgba(181,255,58,0.15); border-radius:16px; padding:16px 18px; margin-bottom:12px; backdrop-filter:blur(20px); display:flex; align-items:center; gap:14px; }
+    .workout-card.rest { background:var(--surface); border-color:var(--border); }
+    .workout-icon { font-size:24px; flex-shrink:0; width:44px; height:44px; display:flex; align-items:center; justify-content:center; background:rgba(181,255,58,0.08); border-radius:12px; }
+    .workout-card.rest .workout-icon { background:rgba(255,255,255,0.04); }
+    .workout-info { flex:1; }
+    .workout-eyebrow { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); margin-bottom:4px; font-weight:500; }
+    .workout-card.rest .workout-eyebrow { color:var(--text-dim); }
+    .workout-name { font-size:15px; font-weight:700; color:var(--text); margin-bottom:2px; letter-spacing:-0.01em; }
+    .workout-desc { font-size:12px; color:var(--text-dim); }
+    .habit-list { background:var(--surface); border:1px solid var(--border); border-radius:20px; overflow:hidden; backdrop-filter:blur(20px); }
+    .habit-row { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.2s; }
+    .habit-row:last-child { border-bottom:none; }
+    .habit-row:hover { background:rgba(255,255,255,0.06); }
+    .habit-label { font-size:15px; color:var(--text); font-weight:500; }
+    .habit-toggle { width:30px; height:30px; border-radius:10px; border:1.5px solid rgba(255,255,255,0.14); background:transparent; display:flex; align-items:center; justify-content:center; font-size:16px; color:transparent; transition:all 0.25s cubic-bezier(0.16,1,0.3,1); font-weight:700; }
+    .habit-toggle.done { background:var(--accent); border-color:var(--accent); color:#0A0118; box-shadow:0 0 20px rgba(181,255,58,0.4); }
+    .streak { margin-top:14px; background:linear-gradient(135deg,rgba(181,255,58,0.08),rgba(124,92,255,0.04)); border:1px solid var(--border); border-radius:20px; padding:18px 20px; display:flex; align-items:center; gap:16px; }
+    .streak-num { font-size:44px; font-weight:800; line-height:1; letter-spacing:-0.04em; background:linear-gradient(135deg,#B5FF3A,#7C5CFF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .streak-txt { flex:1; }
+    .streak-line1 { font-size:13px; color:var(--text-dim); }
+    .streak-line2 { font-size:14px; color:var(--text); font-weight:600; margin-top:2px; }
+    .ippt-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:18px; }
+    .ippt-stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 12px 16px; text-align:center; backdrop-filter:blur(20px); }
+    .ippt-stat-name { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.08em; color:rgba(255,255,255,0.35); text-transform:uppercase; margin-bottom:8px; font-weight:500; }
+    .ippt-stat-val { font-size:32px; font-weight:800; line-height:1; color:var(--text); letter-spacing:-0.03em; }
+    .ippt-stat-val.has { color:var(--accent); }
+    .ippt-stat-target { font-size:10px; color:rgba(255,255,255,0.35); margin-top:6px; font-family:'JetBrains Mono',monospace; }
+    .btn-ghost { width:100%; padding:14px 20px; border-radius:100px; border:1.5px solid rgba(181,255,58,0.35); background:transparent; color:var(--accent); font-family:'Inter',sans-serif; font-size:15px; font-weight:600; cursor:pointer; letter-spacing:-0.01em; transition:all 0.25s cubic-bezier(0.16,1,0.3,1); margin-bottom:12px; }
+    .btn-ghost:hover { background:rgba(181,255,58,0.08); border-color:var(--accent); }
+    .btn-save { width:100%; padding:15px 20px; border-radius:100px; border:none; background:var(--accent); color:#0A0118; font-family:'Inter',sans-serif; font-size:15px; font-weight:700; cursor:pointer; letter-spacing:-0.01em; transition:all 0.2s; }
+    .btn-save:hover { opacity:0.88; } .btn-save:active { transform:scale(0.98); }
+    .log-form { max-height:0; overflow:hidden; transition:max-height 0.4s cubic-bezier(0.16,1,0.3,1); }
+    .log-form.open { max-height:500px; }
+    .log-form-inner { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:22px 20px; backdrop-filter:blur(20px); margin-bottom:12px; }
+    .log-form-title { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); margin-bottom:18px; }
+    .input-group { margin-bottom:16px; }
+    .input-group:last-of-type { margin-bottom:20px; }
+    .input-label { font-size:12px; font-weight:600; color:var(--text-dim); margin-bottom:8px; display:block; letter-spacing:0.02em; }
+    .input-field { width:100%; padding:13px 16px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:500; outline:none; transition:border-color 0.2s,background 0.2s; }
+    .input-field:focus { border-color:rgba(181,255,58,0.5); background:rgba(181,255,58,0.04); }
+    .input-field::-webkit-outer-spin-button,.input-field::-webkit-inner-spin-button { -webkit-appearance:none; }
+    .input-field[type=number] { -moz-appearance:textfield; }
+    .input-field::placeholder { color:rgba(255,255,255,0.18); font-size:16px; }
+    .input-field.sm { font-size:15px; font-family:'Inter',sans-serif; }
+    .input-field[type="date"] { font-size:14px; font-family:'Inter',sans-serif; color-scheme:dark; }
+    .confirm-msg { display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--accent); padding:10px 16px; background:rgba(181,255,58,0.08); border:1px solid rgba(181,255,58,0.2); border-radius:100px; margin-bottom:12px; opacity:0; transform:translateY(4px); transition:opacity 0.3s,transform 0.3s; pointer-events:none; }
+    .confirm-msg.show { opacity:1; transform:translateY(0); }
+    /* FINANCE BASE */
+    .nw-card { background:linear-gradient(135deg,rgba(124,92,255,0.15),rgba(181,255,58,0.04)),var(--surface); border:1px solid rgba(255,255,255,0.14); border-radius:28px; padding:28px 24px 26px; margin-bottom:20px; text-align:center; backdrop-filter:blur(20px); position:relative; overflow:hidden; }
+    .nw-card::before { content:''; position:absolute; top:-40%; left:-20%; width:140%; height:140%; background:radial-gradient(circle,rgba(124,92,255,0.08),transparent 60%); pointer-events:none; }
+    .nw-label { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim); margin-bottom:14px; position:relative; }
+    .nw-num { font-size:60px; font-weight:800; line-height:1; letter-spacing:-0.04em; margin-bottom:10px; position:relative; }
+    .nw-num.negative { color:#FF5C7C; }
+    .nw-num.zero { color:var(--accent); }
+    .nw-num.positive { background:linear-gradient(135deg,#B5FF3A,#7C5CFF); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .nw-subtitle { font-size:14px; color:var(--text-dim); margin-bottom:16px; position:relative; }
+    .nw-breakdown { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim); position:relative; }
+    .tab-bar { display:flex; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:14px; padding:4px; margin-bottom:20px; gap:3px; }
+    .tab-btn { flex:1; background:none; border:none; color:var(--text-dim); font-family:'Inter',sans-serif; font-size:13px; font-weight:600; padding:9px 4px; border-radius:10px; cursor:pointer; transition:all 0.2s; letter-spacing:-0.01em; }
+    .tab-btn.active { background:var(--accent); color:#0A0118; }
+    .finance-tab-content { display:none; }
+    .finance-tab-content.active { display:block; }
+    /* DEBTS */
+    .debt-list { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+    .debt-row { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px 18px; backdrop-filter:blur(20px); transition:opacity 0.35s; }
+    .debt-row.cleared { opacity:0.4; }
+    .debt-main { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:10px; gap:12px; }
+    .debt-name { font-size:16px; font-weight:600; color:var(--text); }
+    .debt-row.cleared .debt-name { text-decoration:line-through; color:var(--text-dim); }
+    .debt-amount { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; color:#FF5C7C; white-space:nowrap; flex-shrink:0; }
+    .debt-row.cleared .debt-amount { text-decoration:line-through; color:var(--text-dim); }
+    .debt-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .debt-target { font-family:'JetBrains Mono',monospace; font-size:10px; color:rgba(255,255,255,0.3); letter-spacing:0.02em; }
+    .debt-actions { display:flex; gap:6px; }
+    .debt-btn { border:none; cursor:pointer; font-family:'Inter',sans-serif; font-size:12px; font-weight:600; border-radius:100px; transition:all 0.2s; }
+    .debt-btn.clear { background:rgba(181,255,58,0.1); color:var(--accent); padding:6px 13px; border:1px solid rgba(181,255,58,0.2); }
+    .debt-btn.clear:hover { background:rgba(181,255,58,0.2); }
+    .debt-btn.delete { background:rgba(255,92,124,0.08); color:#FF5C7C; padding:6px 11px; border:1px solid rgba(255,92,124,0.15); font-size:15px; line-height:1; }
+    .debt-btn.delete:hover { background:rgba(255,92,124,0.18); }
+    .debt-cleared-badge { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); letter-spacing:0.05em; }
+    .add-debt-form { max-height:0; overflow:hidden; transition:max-height 0.4s cubic-bezier(0.16,1,0.3,1); }
+    .add-debt-form.open { max-height:480px; }
+    .add-debt-inner { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:22px 20px; backdrop-filter:blur(20px); margin-bottom:12px; }
+    /* SAVINGS */
+    .savings-list { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+    .savings-bucket { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px 18px 14px; backdrop-filter:blur(20px); }
+    .savings-bucket-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .savings-bucket-name { font-size:15px; font-weight:600; color:var(--text); }
+    .savings-bucket-balance { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:var(--accent); cursor:pointer; border-bottom:1px dashed rgba(181,255,58,0.45); padding-bottom:1px; transition:border-color 0.2s; }
+    .savings-bucket-balance:hover { border-color:rgba(181,255,58,0.9); }
+    .savings-balance-input { width:100px; background:rgba(181,255,58,0.06); border:1px solid rgba(181,255,58,0.45); border-radius:8px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:600; padding:3px 8px; outline:none; text-align:right; }
+    .savings-balance-input:focus { border-color:rgba(181,255,58,0.8); }
+    .savings-progress-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:10px; color:rgba(255,255,255,0.3); letter-spacing:0.02em; }
+    .savings-bar-track { height:4px; background:rgba(255,255,255,0.06); border-radius:100px; overflow:hidden; margin-bottom:12px; }
+    .savings-bar-fill { height:100%; background:linear-gradient(90deg,#7C5CFF,#B5FF3A); border-radius:100px; transition:width 0.5s cubic-bezier(0.16,1,0.3,1); }
+    .savings-bar-fill.complete { background:var(--accent); }
+    .savings-bucket-footer { display:flex; justify-content:flex-end; }
+    .savings-delete-btn { background:rgba(255,92,124,0.08); color:#FF5C7C; border:1px solid rgba(255,92,124,0.15); border-radius:100px; padding:5px 11px; font-size:15px; line-height:1; cursor:pointer; transition:background 0.2s; }
+    .savings-delete-btn:hover { background:rgba(255,92,124,0.18); }
+    .add-savings-form { max-height:0; overflow:hidden; transition:max-height 0.4s cubic-bezier(0.16,1,0.3,1); }
+    .add-savings-form.open { max-height:520px; }
+    .add-savings-inner { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:22px 20px; backdrop-filter:blur(20px); margin-bottom:12px; }
+    /* SPUS */
+    .spus-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px; }
+    .spus-stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px 10px; text-align:center; backdrop-filter:blur(20px); }
+    .spus-stat-label { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:0.08em; color:rgba(255,255,255,0.35); text-transform:uppercase; margin-bottom:6px; font-weight:500; }
+    .spus-stat-val { font-size:16px; font-weight:800; color:var(--text); letter-spacing:-0.02em; line-height:1.2; }
+    .spus-stat-val.gain { color:var(--accent); }
+    .spus-stat-val.loss { color:#FF5C7C; }
+    .spus-stat-sub { font-size:9px; color:rgba(255,255,255,0.3); margin-top:3px; font-family:'JetBrains Mono',monospace; }
+    .spus-rates { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:14px; display:flex; }
+    .spus-rate-item { flex:1; text-align:center; padding:0 8px; }
+    .spus-rate-item:not(:last-child) { border-right:1px solid var(--border); }
+    .spus-rate-label { font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; }
+    .spus-rate-val { font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; color:var(--accent); cursor:pointer; border-bottom:1px dashed rgba(181,255,58,0.4); padding-bottom:1px; display:inline; }
+    .spus-rate-val.no-edit { color:var(--text); cursor:default; border-bottom:none; }
+    .spus-rate-unit { font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(255,255,255,0.3); margin-left:2px; }
+    .spus-rate-input { width:72px; background:rgba(181,255,58,0.06); border:1px solid rgba(181,255,58,0.4); border-radius:6px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px; padding:2px 6px; outline:none; }
+    .add-spus-form { max-height:0; overflow:hidden; transition:max-height 0.4s cubic-bezier(0.16,1,0.3,1); }
+    .add-spus-form.open { max-height:700px; }
+    .add-spus-inner { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:22px 20px; backdrop-filter:blur(20px); margin-bottom:12px; }
+    .spus-log { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+    .spus-entry { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+    .spus-entry-top { display:flex; justify-content:space-between; align-items:flex-start; }
+    .spus-entry-left {}
+    .spus-entry-date { font-family:'JetBrains Mono',monospace; font-size:10px; color:rgba(255,255,255,0.35); margin-bottom:3px; }
+    .spus-entry-details { font-size:12px; color:var(--text-dim); margin-bottom:2px; }
+    .spus-entry-notes { font-size:11px; color:rgba(255,255,255,0.28); font-style:italic; }
+    .spus-entry-right { display:flex; align-items:center; gap:8px; flex-shrink:0; margin-left:12px; }
+    .spus-entry-amount { font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:var(--accent); }
+    .spus-del-btn { background:none; border:none; color:rgba(255,92,124,0.45); font-size:18px; cursor:pointer; transition:color 0.2s; padding:0; line-height:1; }
+    .spus-del-btn:hover { color:#FF5C7C; }
+    /* EXPENSES */
+    .exp-month-nav { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:14px; }
+    .exp-month-btn { background:var(--surface); border:1px solid var(--border); border-radius:100px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--text-dim); cursor:pointer; transition:all 0.2s; line-height:1; }
+    .exp-month-btn:hover { border-color:rgba(255,255,255,0.2); color:var(--text); }
+    .exp-month-label { font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; color:var(--text); min-width:100px; text-align:center; }
+    .exp-summary { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 18px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; }
+    .exp-summary-label { font-size:13px; color:var(--text-dim); font-weight:500; }
+    .exp-summary-right { text-align:right; }
+    .exp-summary-amount { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; color:var(--text); }
+    .exp-summary-budget { font-family:'JetBrains Mono',monospace; font-size:10px; color:rgba(255,255,255,0.3); margin-top:2px; }
+    .exp-categories { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+    .exp-cat { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:13px 16px; }
+    .exp-cat-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .exp-cat-name { font-size:13px; font-weight:600; color:var(--text); }
+    .exp-cat-amounts { font-family:'JetBrains Mono',monospace; font-size:10px; color:rgba(255,255,255,0.35); }
+    .exp-cat-amounts.over { color:#FF5C7C; }
+    .exp-bar-track { height:4px; background:rgba(255,255,255,0.06); border-radius:100px; overflow:hidden; }
+    .exp-bar-fill { height:100%; background:var(--accent); border-radius:100px; transition:width 0.4s cubic-bezier(0.16,1,0.3,1); }
+    .exp-bar-fill.over { background:#FF5C7C; }
+    .add-expense-form { max-height:0; overflow:hidden; transition:max-height 0.4s cubic-bezier(0.16,1,0.3,1); }
+    .add-expense-form.open { max-height:620px; }
+    .add-expense-inner { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:22px 20px; backdrop-filter:blur(20px); margin-bottom:12px; }
+    .select-field { width:100%; padding:13px 16px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:'Inter',sans-serif; font-size:15px; outline:none; -webkit-appearance:none; cursor:pointer; color-scheme:dark; }
+    .select-field:focus { border-color:rgba(181,255,58,0.5); }
+    .exp-entries { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+    .exp-entry { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:10px; }
+    .exp-entry-icon { font-size:18px; flex-shrink:0; }
+    .exp-entry-info { flex:1; min-width:0; }
+    .exp-entry-desc { font-size:13px; color:var(--text); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .exp-entry-meta { font-family:'JetBrains Mono',monospace; font-size:10px; color:rgba(255,255,255,0.3); margin-top:2px; }
+    .exp-entry-amount { font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; color:var(--text); flex-shrink:0; }
+    .exp-entry-del { background:none; border:none; color:rgba(255,92,124,0.4); font-size:18px; cursor:pointer; transition:color 0.2s; flex-shrink:0; line-height:1; }
+    .exp-entry-del:hover { color:#FF5C7C; }
+    /* SHARED */
+    .coming-soon { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:44px 24px; text-align:center; backdrop-filter:blur(20px); }
+    .coming-soon-icon { font-size:34px; margin-bottom:14px; }
+    .coming-soon-title { font-size:17px; font-weight:700; color:var(--text); margin-bottom:6px; }
+    .coming-soon-desc { font-size:14px; color:var(--text-dim); line-height:1.55; }
+    .modal-overlay { position:fixed; inset:0; background:rgba(10,1,24,0.92); backdrop-filter:blur(24px); z-index:200; display:flex; align-items:center; justify-content:center; padding:24px; opacity:0; pointer-events:none; transition:opacity 0.4s; }
+    .modal-overlay.show { opacity:1; pointer-events:all; }
+    .modal-box { background:linear-gradient(135deg,rgba(181,255,58,0.1),rgba(124,92,255,0.08)); border:1px solid rgba(181,255,58,0.3); border-radius:28px; padding:40px 28px; text-align:center; max-width:320px; width:100%; }
+    .modal-icon { font-size:52px; margin-bottom:18px; }
+    .modal-title { font-size:30px; font-weight:800; letter-spacing:-0.03em; background:linear-gradient(135deg,#FFFFFF,#B5FF3A); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:10px; }
+    .modal-subtitle { font-size:15px; color:var(--text-dim); line-height:1.6; margin-bottom:28px; }
+    .modal-close { background:var(--accent); border:none; border-radius:100px; padding:14px 32px; color:#0A0118; font-family:'Inter',sans-serif; font-size:15px; font-weight:700; cursor:pointer; transition:opacity 0.2s; }
+    .modal-close:hover { opacity:0.85; }
+    /* PLAN */
+    .plan-intro { font-size:14px; color:var(--text-dim); line-height:1.6; margin-bottom:24px; }
+    .phase-card { background:var(--surface); border:1px solid var(--border); border-radius:20px; margin-bottom:10px; overflow:hidden; backdrop-filter:blur(20px); transition:opacity 0.3s; }
+    .phase-card.current { background:linear-gradient(135deg,rgba(181,255,58,0.07),rgba(124,92,255,0.04)); border-color:rgba(181,255,58,0.28); }
+    .phase-card.past { opacity:0.45; }
+    .phase-header { padding:20px 20px 18px; cursor:pointer; user-select:none; }
+    .phase-top-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .phase-pill { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; padding:4px 10px; border-radius:100px; display:inline-flex; align-items:center; gap:5px; }
+    .phase-pill.current { background:rgba(181,255,58,0.15); color:var(--accent); }
+    .phase-pill.past    { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.3); }
+    .phase-pill.future  { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.4); }
+    .phase-chevron { font-size:11px; color:rgba(255,255,255,0.3); display:inline-block; transition:transform 0.35s cubic-bezier(0.16,1,0.3,1); flex-shrink:0; }
+    .phase-chevron.open { transform:rotate(180deg); }
+    .phase-date { font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(255,255,255,0.28); margin-bottom:8px; letter-spacing:0.02em; }
+    .phase-name { font-size:21px; font-weight:800; color:var(--text); letter-spacing:-0.025em; line-height:1.1; margin-bottom:6px; }
+    .phase-summary { font-size:13px; color:var(--text-dim); line-height:1.5; }
+    .phase-body { max-height:0; overflow:hidden; transition:max-height 0.5s cubic-bezier(0.16,1,0.3,1); }
+    .phase-body.open { max-height:1600px; }
+    .phase-body-inner { padding:4px 20px 24px; border-top:1px solid var(--border); }
+    .phase-section { margin-top:20px; }
+    .phase-section-label { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.28); margin-bottom:10px; font-weight:500; }
+    .phase-item { font-size:14px; color:var(--text-dim); line-height:1.55; padding-left:16px; position:relative; margin-bottom:6px; }
+    .phase-item:last-child { margin-bottom:0; }
+    .phase-item.goal::before { content:'·'; position:absolute; left:0; color:var(--accent); font-size:18px; line-height:1; top:1px; }
+    .phase-item.kd::before { content:'▸'; position:absolute; left:0; color:rgba(0,229,255,0.65); font-size:10px; top:3px; }
+    .kd-date { font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(0,229,255,0.6); margin-right:4px; }
+    .phase-item.note::before { content:'—'; position:absolute; left:0; color:rgba(255,255,255,0.2); font-size:12px; top:1px; }
+    .rules-card { background:linear-gradient(135deg,rgba(124,92,255,0.1),rgba(181,255,58,0.04)); border:1px solid rgba(124,92,255,0.28); border-radius:20px; padding:24px 20px 28px; margin-top:18px; backdrop-filter:blur(20px); }
+    .rules-heading { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent-2); margin-bottom:18px; font-weight:500; }
+    .rule-item { display:flex; gap:12px; font-size:14px; color:var(--text-dim); line-height:1.5; margin-bottom:10px; }
+    .rule-item:last-of-type { margin-bottom:0; }
+    .rule-num { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent-2); flex-shrink:0; width:20px; padding-top:1px; }
+    .rules-footer { margin-top:20px; font-family:'JetBrains Mono',monospace; font-size:12px; color:rgba(255,255,255,0.25); text-align:center; letter-spacing:0.05em; }
+
+    /* ══ DOUBT MODE ══ */
+    .doubt-header { text-align:center; margin-bottom:28px; }
+    .doubt-header-title { font-size:28px; font-weight:800; letter-spacing:-0.03em; color:var(--text); margin-bottom:6px; }
+    .doubt-header-sub { font-size:14px; color:var(--text-dim); line-height:1.55; }
+
+    /* Verse card — rotates through ayahs */
+    .verse-card {
+      background: linear-gradient(135deg, rgba(124,92,255,0.15), rgba(181,255,58,0.04)), var(--surface);
+      border: 1px solid rgba(124,92,255,0.28);
+      border-radius: 24px;
+      padding: 28px 24px;
+      margin-bottom: 14px;
+      backdrop-filter: blur(20px);
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .verse-card::before { content:''; position:absolute; top:-40%; right:-20%; width:80%; height:80%; background:radial-gradient(circle,rgba(124,92,255,0.1),transparent 60%); pointer-events:none; }
+    .verse-theme { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent-2); margin-bottom:14px; font-weight:500; }
+    .verse-arabic { font-size:20px; color:var(--text); line-height:1.8; text-align:right; direction:rtl; margin-bottom:16px; font-weight:500; }
+    .verse-english { font-size:14px; color:var(--text-dim); line-height:1.65; margin-bottom:12px; font-style:italic; }
+    .verse-ref { font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(255,255,255,0.3); }
+    .verse-nav { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:28px; }
+    .verse-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.15); transition:all 0.25s; }
+    .verse-dot.active { background:var(--accent-2); width:18px; border-radius:100px; }
+    .verse-hint { font-size:11px; color:rgba(255,255,255,0.2); font-family:'JetBrains Mono',monospace; text-align:center; margin-top:-20px; margin-bottom:24px; }
+
+    /* Section label */
+    .doubt-section-label { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.28); margin-bottom:12px; font-weight:500; }
+
+    /* Affirmation cards */
+    .affirmation-list { display:flex; flex-direction:column; gap:10px; margin-bottom:32px; }
+    .affirmation-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      backdrop-filter: blur(20px);
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .affirmation-num { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--accent-2); font-weight:600; flex-shrink:0; padding-top:1px; }
+    .affirmation-text { font-size:15px; color:var(--text); font-weight:600; line-height:1.45; letter-spacing:-0.01em; }
+
+    /* Dua footer */
+    .doubt-dua { text-align:center; padding:24px 20px; }
+    .doubt-dua-text { font-size:18px; color:rgba(255,255,255,0.2); font-family:'JetBrains Mono',monospace; letter-spacing:0.05em; }
+
+
+    /* ── SYNC STATUS PILL ── */
+    /*
+      Fixed above the nav bar. Always visible.
+      Shows current sync state with colour + label.
+      Fades out when synced so it stays out of the way.
+    */
+    .sync-pill {
+      position: fixed;
+      bottom: 88px;           /* sits just above the nav bar */
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      backdrop-filter: blur(20px);
+      z-index: 99;
+      pointer-events: none;
+      transition: opacity 0.5s, transform 0.3s;
+      white-space: nowrap;
+    }
+    .sync-pill-dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+      transition: background 0.4s, box-shadow 0.4s;
+    }
+    /* State variants */
+    .sync-pill.syncing {
+      background: rgba(255,184,0,0.12);
+      border: 1px solid rgba(255,184,0,0.3);
+      color: #FFB800;
+      opacity: 1;
+    }
+    .sync-pill.syncing .sync-pill-dot { background:#FFB800; box-shadow:0 0 6px rgba(255,184,0,0.7); }
+
+    .sync-pill.online {
+      background: rgba(181,255,58,0.08);
+      border: 1px solid rgba(181,255,58,0.2);
+      color: var(--accent);
+      opacity: 0; /* hidden when synced — out of the way */
+    }
+    .sync-pill.online .sync-pill-dot { background:var(--accent); box-shadow:0 0 6px rgba(181,255,58,0.6); }
+
+    .sync-pill.offline {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.4);
+      opacity: 1;
+    }
+    .sync-pill.offline .sync-pill-dot { background:rgba(255,255,255,0.25); }
+
+    .sync-pill.error {
+      background: rgba(255,92,124,0.1);
+      border: 1px solid rgba(255,92,124,0.3);
+      color: #FF5C7C;
+      opacity: 1;
+    }
+    .sync-pill.error .sync-pill-dot { background:#FF5C7C; box-shadow:0 0 6px rgba(255,92,124,0.6); }
+
+    .nav { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:rgba(20,8,36,0.7); backdrop-filter:blur(40px) saturate(180%); -webkit-backdrop-filter:blur(40px) saturate(180%); border:1px solid rgba(255,255,255,0.14); border-radius:100px; padding:6px; display:flex; gap:4px; z-index:100; box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 0 1px rgba(255,255,255,0.04) inset; }
+    .nav-btn { background:none; border:none; color:rgba(255,255,255,0.35); padding:10px 14px; cursor:pointer; transition:all 0.25s cubic-bezier(0.16,1,0.3,1); display:flex; flex-direction:column; align-items:center; gap:2px; border-radius:100px; font-family:'Inter',sans-serif; font-size:10px; font-weight:600; letter-spacing:-0.005em; min-width:56px; }
+    .nav-btn.active { background:var(--accent); color:#0A0118; box-shadow:0 0 20px rgba(181,255,58,0.4); }
+    .nav-icon { width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; }
+  </style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="topbar">
+    <div class="topbar-greet">Assalamualaikum, <strong>Syazwan</strong></div>
+    <div class="topbar-status" id="phase-home">Phase 01</div>
+  </div>
+  <div class="hero">
+    <div class="hero-label">DAYS UNTIL ENLISTMENT</div>
+    <div class="hero-days" id="countdown">&#8212;</div>
+    <div class="hero-suffix">Days remaining &#183; Bismillah</div>
+    <div class="hero-date">&#128197; August 12, 2026</div>
+  </div>
+  <div id="reminders"></div>
+  <div class="card urgent" id="urgent-card">
+    <div class="card-pill urgent" id="urgent-pill"></div>
+    <div class="card-title" id="urgent-title"></div>
+    <div class="card-desc"  id="urgent-desc"></div>
+  </div>
+  <div id="focus-card"></div>
+  <div class="card featured">
+    <div class="card-pill">&#10022; Focus This Month</div>
+    <div class="card-title">Survive to Payday &#183; Treatment &#183; IPPT Start</div>
+    <div class="card-desc">Survive on S$15 till June 7. Start treatment after blood results. Begin IPPT training Saturday.</div>
+  </div>
+  <div class="card" style="background:linear-gradient(135deg,rgba(0,229,255,0.06),rgba(124,92,255,0.04));border-color:rgba(0,229,255,0.14);">
+    <div class="card-pill cyan">&#10022; Milestone &#183; 2033&#8211;2034</div>
+    <div class="card-title">Take Parents to Liverpool &#183; Anfield</div>
+    <div class="card-desc">S$15,000 target. Bismillah. Insha&#39;Allah their health allows. &#x1F932;</div>
+  </div>
+  <div class="section-heading"><h3>Today</h3></div>
+  <div id="workout-card"></div>
+  <div class="habit-list" id="habit-list"></div>
+  <div class="streak">
+    <div class="streak-num" id="streak-num">0</div>
+    <div class="streak-txt">
+      <div class="streak-line1">day streak &#183; keep going</div>
+      <div class="streak-line2">Never miss twice</div>
+    </div>
+  </div>
+</div>
+
+<!-- IPPT -->
+<div class="page" id="page-ippt">
+  <div class="topbar">
+    <div class="topbar-greet">Phase <span id="phase-ippt">01</span> &#183; <strong>Physical</strong></div>
+    <div class="topbar-status">Week 1 of 8</div>
+  </div>
+  <div class="eyebrow">Training</div>
+  <h1 class="title">IPPT Tracker</h1>
+  <p class="subtitle">Target: 61+ points by July 29, 2026 to skip PTP at Tekong.</p>
+  <div class="ippt-stats">
+    <div class="ippt-stat"><div class="ippt-stat-name">Push-ups</div><div class="ippt-stat-val" id="ippt-pushup">&#8212;</div><div class="ippt-stat-target">/ 25 target</div></div>
+    <div class="ippt-stat"><div class="ippt-stat-name">Sit-ups</div><div class="ippt-stat-val" id="ippt-situp">&#8212;</div><div class="ippt-stat-target">/ 25 target</div></div>
+    <div class="ippt-stat"><div class="ippt-stat-name">2.4 km</div><div class="ippt-stat-val" id="ippt-run">&#8212;</div><div class="ippt-stat-target">/ 13:30 target</div></div>
+  </div>
+  <button class="btn-ghost" onclick="toggleForm()">Log Today&#39;s Numbers</button>
+  <div class="log-form" id="log-form">
+    <div class="log-form-inner">
+      <div class="log-form-title">Today&#39;s Session</div>
+      <div class="input-group"><label class="input-label" for="input-pushup">Push-ups</label><input class="input-field" id="input-pushup" type="number" min="0" max="200" placeholder="0"></div>
+      <div class="input-group"><label class="input-label" for="input-situp">Sit-ups</label><input class="input-field" id="input-situp" type="number" min="0" max="200" placeholder="0"></div>
+      <div class="input-group"><label class="input-label" for="input-run">2.4 km Time <span style="opacity:0.5;font-weight:400">(mm:ss)</span></label><input class="input-field" id="input-run" type="text" placeholder="14:20" maxlength="5"></div>
+      <button class="btn-save" onclick="saveIPPT()">Save</button>
+    </div>
+  </div>
+  <div class="confirm-msg" id="confirm-msg">&#10003; Logged &#8212; keep grinding!</div>
+</div>
+
+<!-- PLAN -->
+<div class="page" id="page-blueprint">
+  <div class="topbar">
+    <div class="topbar-greet">Phase <span id="phase-plan">01</span> &#183; <strong>Blueprint</strong></div>
+    <div class="topbar-status">5 Phases</div>
+  </div>
+  <div class="eyebrow">The Blueprint</div>
+  <h1 class="title">Life Plan</h1>
+  <p class="plan-intro">Five phases. One direction. Tap any phase to expand it.</p>
+  <div class="phase-card" id="phase-card-1">
+    <div class="phase-header" onclick="togglePhase(1)">
+      <div class="phase-top-row"><div class="phase-pill" id="phase-pill-1">Phase 01</div><span class="phase-chevron" id="phase-chevron-1">&#9662;</span></div>
+      <div class="phase-date">Now &#8594; August 11, 2026</div><div class="phase-name">The Solvency Sprint</div>
+      <div class="phase-summary">Clear debt, fix health, hit IPPT target, enlist clean.</div>
+    </div>
+    <div class="phase-body" id="phase-body-1"><div class="phase-body-inner">
+      <div class="phase-section"><div class="phase-section-label">Goals</div>
+        <div class="phase-item goal">Clear S$1,814.95 debt &#8212; CIMB, GXS, Shopee, Grab, Shideeq, Jordan, Mummy, Claude sub</div>
+        <div class="phase-item goal">Reach BMI 21 (currently 18)</div>
+        <div class="phase-item goal">IPPT 61+ points to skip PTP</div>
+        <div class="phase-item goal">Quit caffeine pills &#8212; done &#10003;</div>
+        <div class="phase-item goal">Folate + Vitamin D treatment</div>
+      </div>
+      <div class="phase-section"><div class="phase-section-label">Key Dates</div>
+        <div class="phase-item kd"><span class="kd-date">Jun 7</span> Payday &#8212; clear CIMB + GXS + Grab + personal debts</div>
+        <div class="phase-item kd"><span class="kd-date">Jul 7</span> Payday &#8212; clear Shopee, deactivate PayLater</div>
+        <div class="phase-item kd"><span class="kd-date">Jul 24</span> Kyndryl contract ends</div>
+        <div class="phase-item kd"><span class="kd-date">Jul 29</span> IPPT test</div>
+        <div class="phase-item kd"><span class="kd-date">Aug 12</span> Enlistment</div>
+      </div>
+      <div class="phase-section"><div class="phase-section-label">Notes</div>
+        <div class="phase-item note">Survive on S$15 + food from mum until June 7</div>
+        <div class="phase-item note">Treatment for low folate after follow-up consult</div>
+        <div class="phase-item note">Vitamin D OTC after payday</div>
+        <div class="phase-item note">No new debt, no BNPL, no trading</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="phase-card" id="phase-card-2">
+    <div class="phase-header" onclick="togglePhase(2)">
+      <div class="phase-top-row"><div class="phase-pill" id="phase-pill-2">Phase 02</div><span class="phase-chevron" id="phase-chevron-2">&#9662;</span></div>
+      <div class="phase-date">August 12, 2026 &#8594; ~August 2028</div><div class="phase-name">NS Incubator</div>
+      <div class="phase-summary">Survive NS, quit smoking, earn Network+ and Security+, start SPUS DCA.</div>
+    </div>
+    <div class="phase-body" id="phase-body-2"><div class="phase-body-inner">
+      <div class="phase-section"><div class="phase-section-label">Goals</div>
+        <div class="phase-item goal">CompTIA Network+ (2027)</div>
+        <div class="phase-item goal">CompTIA Security+ (2028)</div>
+        <div class="phase-item goal">Start SPUS DCA at S$350/month via Tiger Brokers</div>
+        <div class="phase-item goal">Quit smoking completely</div>
+        <div class="phase-item goal">Return to 5 daily prayers</div>
+        <div class="phase-item goal">Build basic homelab on PC</div>
+      </div>
+      <div class="phase-section"><div class="phase-section-label">Key Dates</div>
+        <div class="phase-item kd"><span class="kd-date">Aug 12, 2026</span> Enlistment Day</div>
+        <div class="phase-item kd"><span class="kd-date">Late 2026</span> Post-BMT, posted to unit</div>
+        <div class="phase-item kd"><span class="kd-date">2027</span> Network+ exam</div>
+        <div class="phase-item kd"><span class="kd-date">2028</span> Security+ exam</div>
+        <div class="phase-item kd"><span class="kd-date">~Aug 2028</span> ORD</div>
+      </div>
+      <div class="phase-section"><div class="phase-section-label">Notes</div>
+        <div class="phase-item note">Don&#39;t study certs during BMT &#8212; focus on surviving</div>
+        <div class="phase-item note">Professor Messer YouTube + textbooks (free resources only)</div>
+        <div class="phase-item note">Open Tiger Brokers before NS for SPUS DCA setup</div>
+        <div class="phase-item note">NS structure heals depletion &#8212; eat, sleep, train</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="phase-card" id="phase-card-3">
+    <div class="phase-header" onclick="togglePhase(3)">
+      <div class="phase-top-row"><div class="phase-pill" id="phase-pill-3">Phase 03</div><span class="phase-chevron" id="phase-chevron-3">&#9662;</span></div>
+      <div class="phase-date">2028 &#8594; 2033</div><div class="phase-name">The Defender</div>
+      <div class="phase-summary">Enter cybersecurity, grow SOC Analyst &#8594; Security Engineer, marry, BTO, parents&#39; Hajj.</div>
+    </div>
+    <div class="phase-body" id="phase-body-3"><div class="phase-body-inner">
+      <div class="phase-section"><div class="phase-section-label">Goals</div>
+        <div class="phase-item goal">First cyber role: Ensign, NCS, ST Eng, GovTech, or Quann</div>
+        <div class="phase-item goal">SOC Analyst &#8594; Senior SOC Analyst &#8594; Security Engineer</div>
+        <div class="phase-item goal">BTO application by 2030</div>
+        <div class="phase-item goal">Marry by 2032</div>
+        <div class="phase-item goal">Parents&#39; Hajj funded</div>
+        <div class="phase-item goal">Add certs: CySA+, AWS Security, CRISC</div>
+        <div class="phase-item goal">SPUS DCA escalating to S$700&#8211;1,500/month</div>
+      </div>
+      <div class="phase-section"><div class="phase-section-label">Key Dates</div>
+        <div class="phase-item kd"><span class="kd-date">2028</span> First cybersecurity job &#8212; target Ensign or NCS</div>
+        <div class="phase-item kd"><span class="kd-date">2030</span> BTO application</div>
+        <div class="phase-item kd"><span class="kd-date">2031&#8211;2032</span> Marriage</div>
+        <div class="phase-item kd"><span class="kd-date">2032&#8211;2033</span> Parents&#39; Hajj</div>
+        <div class="phase-item kd"><span class="kd-date">2032&#8211;2033</span> BTO key collection</div>
+      </div>
+      <div class="phase-section"><div class="phase-section-label">Notes</div>
+        <div class="phase-item note">Loyalty matters &#8212; don&#39;t job-hop more than twice</div>
+        <div class="phase-item note">Build reputation in Singapore cyber community</div>
+        <div class="phase-item note">Marry someone aligned in deen first</div>
+        <div class="phase-item note">Live within means even as income grows</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="phase-card" id="phase-card-4">
+    <div class="phase-header" onclick="togglePhase(4)">
+      <div class="phase-top-row"><div class="phase-pill" id="phase-pill-4">Phase 04</div><span class="phase-chevron" id="phase-chevron-4">&#9662;</span></div>
+      <div class="phase-date">2034 &#8594; 2039</div><div class="phase-name">The Strategist</div>
+      <div class="phase-summary">Bank Cybersecurity Manager or Head of Cloud Security, established family, parents&#39; Liverpool trip.</div>
+    </div>
+    <div class="phase-body" id="phase-body-4"><div class="phase-body-inner">
+      <div class="phase-section"><div class="phase-section-label">Goals</div>
+        <div class="phase-item goal">Bank Cybersecurity Manager or Head of Cloud Security</div>
+        <div class="phase-item goal">Household income S$13&#8211;18k/month</div>
+        <div class="phase-item goal">First/second child</div>
+        <div class="phase-item goal">Liverpool trip with parents (target 2033&#8211;2034)</div>
+        <div class="phase-item goal">Certs: CISM, CCSP, CISSP</div>
+        <div class="phase-item goal">SPUS portfolio crossing S$300k</div>
+      </div>
+      <div class="phase-section"><div class="phase-section-label">Key Dates</div>
+        <div class="phase-item kd"><span class="kd-date">2033&#8211;2034</span> Parents&#39; Liverpool trip &#9992;&#65039;</div>
+        <div class="phase-item kd"><span class="kd-date">2034</span> Manager-level role</div>
+        <div class="phase-item kd"><span class="kd-date">~2035</span> First child</div>
+        <div class="phase-item kd"><span class="kd-date">2036&#8211;2037</span> Head of role</div>
+      </div>
+      <div class="phase-section"><div class="phase-section-label">Notes</div>
+        <div class="phase-item note">Comfortable MBS/Jewel lifestyle achievable here</div>
+        <div class="phase-item note">Time with family &gt; climbing further</div>
+        <div class="phase-item note">Stay technical AND strategic &#8212; don&#39;t lose hands-on edge</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="phase-card" id="phase-card-5">
+    <div class="phase-header" onclick="togglePhase(5)">
+      <div class="phase-top-row"><div class="phase-pill" id="phase-pill-5">Phase 05 &#183; Optional</div><span class="phase-chevron" id="phase-chevron-5">&#9662;</span></div>
+      <div class="phase-date">2040 &#8594; 2043</div><div class="phase-name">The Commander</div>
+      <div class="phase-summary">Deputy CISO &#8594; CISO, or Principal Engineer, or senior government role. Stable + halal, not maximum.</div>
+    </div>
+    <div class="phase-body" id="phase-body-5"><div class="phase-body-inner">
+      <div class="phase-section"><div class="phase-section-label">Goals</div>
+        <div class="phase-item goal">Deputy CISO &#8594; CISO at SGX-listed firm</div>
+        <div class="phase-item goal">OR Principal Engineer track (technical depth, no management)</div>
+        <div class="phase-item goal">OR Senior government role &#8212; GovTech, CSA, DSTA</div>
+        <div class="phase-item goal">Net worth S$1.5M&#8211;2.5M</div>
+        <div class="phase-item goal">Children in good schools</div>
+        <div class="phase-item goal">Annual family travel</div>
+        <div class="phase-item goal">Possible Umrah every 2&#8211;3 years</div>
+      </div>
+      <div class="phase-section"><div class="phase-section-label">Key Dates</div>
+        <div class="phase-item kd"><span class="kd-date">2040</span> Deputy CISO or equivalent senior role</div>
+        <div class="phase-item kd"><span class="kd-date">2043</span> CISO or Technical Fellow &#8212; age 42</div>
+      </div>
+      <div class="phase-section"><div class="phase-section-label">Notes</div>
+        <div class="phase-item note">This phase is OPTIONAL. Phase 04 ending stable = enough.</div>
+        <div class="phase-item note">Don&#39;t sacrifice family for status</div>
+        <div class="phase-item note">The S$1.5M&#8211;2.5M life at 42 is the comfortable goal, not the floor</div>
+      </div>
+    </div></div>
+  </div>
+  <div class="rules-card">
+    <div class="rules-heading">The Rules That Protect the Plan</div>
+    <div class="rule-item"><span class="rule-num">01</span><span>Never forex / leverage / derivatives &#8212; any form, ever</span></div>
+    <div class="rule-item"><span class="rule-num">02</span><span>Never BNPL after July 7, 2026</span></div>
+    <div class="rule-item"><span class="rule-num">03</span><span>SPUS DCA only &#8212; no switching, no smart bots</span></div>
+    <div class="rule-item"><span class="rule-num">04</span><span>Halal investments only</span></div>
+    <div class="rule-item"><span class="rule-num">05</span><span>Marry before 32, insha&#39;Allah</span></div>
+    <div class="rule-item"><span class="rule-num">06</span><span>Quit smoking before or during BMT</span></div>
+    <div class="rule-item"><span class="rule-num">07</span><span>Return to 5 daily prayers</span></div>
+    <div class="rule-item"><span class="rule-num">08</span><span>No new debt while clearing old</span></div>
+    <div class="rule-item"><span class="rule-num">09</span><span>Annual blueprint review &#8212; not constant tinkering</span></div>
+    <div class="rule-item"><span class="rule-num">10</span><span>Trusted friend is the human witness</span></div>
+    <div class="rule-item"><span class="rule-num">11</span><span>AI for tasks, humans for emotional support</span></div>
+    <div class="rule-item"><span class="rule-num">12</span><span>Sleep is non-negotiable</span></div>
+    <div class="rules-footer">Insha&#39;Allah &#183; Bismillah &#183; Alhamdulillah</div>
+  </div>
+</div>
+
+<!-- FINANCE -->
+<div class="page" id="page-finance">
+  <div class="topbar">
+    <div class="topbar-greet">Phase <span id="phase-finance">01</span> &#183; <strong>Finance</strong></div>
+    <div class="topbar-status">Net Worth</div>
+  </div>
+  <div class="nw-card">
+    <div class="nw-label">Net Worth</div>
+    <div class="nw-num negative" id="nw-num">&#8212;</div>
+    <div class="nw-subtitle" id="nw-subtitle">Clearing to Clean Slate</div>
+    <div class="nw-breakdown">Savings&#160;<span id="nw-savings-display">S$&#8212;</span>&#160;&#183;&#160;Debts&#160;<span id="nw-debts-display">S$&#8212;</span></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="debts"    onclick="switchFinanceTab('debts')">Debts</button>
+    <button class="tab-btn"        data-tab="savings"  onclick="switchFinanceTab('savings')">Savings</button>
+    <button class="tab-btn"        data-tab="spus"     onclick="switchFinanceTab('spus')">SPUS</button>
+    <button class="tab-btn"        data-tab="expenses" onclick="switchFinanceTab('expenses')">Expenses</button>
+  </div>
+
+  <!-- DEBTS -->
+  <div class="finance-tab-content active" id="ftab-debts">
+    <div class="debt-list" id="debt-list"></div>
+    <button class="btn-ghost" onclick="toggleAddDebt()">+ Add Debt</button>
+    <div class="add-debt-form" id="add-debt-form">
+      <div class="add-debt-inner">
+        <div class="log-form-title">New Debt</div>
+        <div class="input-group"><label class="input-label" for="new-debt-name">Name</label><input class="input-field sm" id="new-debt-name" type="text" placeholder="e.g. Credit card"></div>
+        <div class="input-group"><label class="input-label" for="new-debt-amount">Amount (S$)</label><input class="input-field" id="new-debt-amount" type="number" min="0" step="0.01" placeholder="0"></div>
+        <div class="input-group"><label class="input-label" for="new-debt-date">Target clear date <span style="opacity:0.5;font-weight:400">(optional)</span></label><input class="input-field" id="new-debt-date" type="date"></div>
+        <button class="btn-save" onclick="addDebt()">Add Debt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVINGS -->
+  <div class="finance-tab-content" id="ftab-savings">
+    <div class="savings-list" id="savings-list"></div>
+    <button class="btn-ghost" onclick="toggleAddSavings()">+ Add Bucket</button>
+    <div class="add-savings-form" id="add-savings-form">
+      <div class="add-savings-inner">
+        <div class="log-form-title">New Savings Bucket</div>
+        <div class="input-group"><label class="input-label" for="new-savings-name">Name</label><input class="input-field sm" id="new-savings-name" type="text" placeholder="e.g. Emergency fund"></div>
+        <div class="input-group"><label class="input-label" for="new-savings-balance">Current balance (S$)</label><input class="input-field" id="new-savings-balance" type="number" min="0" step="0.01" placeholder="0"></div>
+        <div class="input-group"><label class="input-label" for="new-savings-target">Target (S$) <span style="opacity:0.5;font-weight:400">(optional)</span></label><input class="input-field" id="new-savings-target" type="number" min="0" step="1" placeholder="500"></div>
+        <button class="btn-save" onclick="addSavingsBucket()">Add Bucket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPUS -->
+  <div class="finance-tab-content" id="ftab-spus">
+    <!-- 3 summary stats -->
+    <div class="spus-stats">
+      <div class="spus-stat">
+        <div class="spus-stat-label">Invested</div>
+        <div class="spus-stat-val" id="spus-invested">S$0.00</div>
+        <div class="spus-stat-sub">SGD total</div>
+      </div>
+      <div class="spus-stat">
+        <div class="spus-stat-label">Value</div>
+        <div class="spus-stat-val" id="spus-value-disp">S$0.00</div>
+        <div class="spus-stat-sub">SGD today</div>
+      </div>
+      <div class="spus-stat">
+        <div class="spus-stat-label">Gain / Loss</div>
+        <div class="spus-stat-val" id="spus-gl">&#8212;</div>
+        <div class="spus-stat-sub" id="spus-gl-sub">&#8212;</div>
+      </div>
+    </div>
+    <!-- Tap-to-edit rate fields + total units -->
+    <div class="spus-rates">
+      <div class="spus-rate-item">
+        <div class="spus-rate-label">SPUS price</div>
+        <div style="margin-top:4px">
+          <span class="spus-rate-val" id="spus-price-disp" onclick="startEditSPUS('price')">$&#8212;</span>
+          <input class="spus-rate-input" id="spus-price-edit" type="number" min="0" step="0.01" style="display:none" onblur="saveSPUSField('price')" onkeydown="if(event.key==='Enter')this.blur()">
+          <span class="spus-rate-unit">USD</span>
+        </div>
+      </div>
+      <div class="spus-rate-item">
+        <div class="spus-rate-label">USD/SGD</div>
+        <div style="margin-top:4px">
+          <span class="spus-rate-val" id="spus-rate-disp" onclick="startEditSPUS('rate')">&#8212;</span>
+          <input class="spus-rate-input" id="spus-rate-edit" type="number" min="0" step="0.001" style="display:none" onblur="saveSPUSField('rate')" onkeydown="if(event.key==='Enter')this.blur()">
+          <span class="spus-rate-unit">SGD</span>
+        </div>
+      </div>
+      <div class="spus-rate-item">
+        <div class="spus-rate-label">Units held</div>
+        <div style="margin-top:4px"><span class="spus-rate-val no-edit" id="spus-units-disp">0.0000</span></div>
+      </div>
+    </div>
+    <button class="btn-ghost" onclick="toggleAddSPUS()">+ Log DCA Entry</button>
+    <div class="add-spus-form" id="add-spus-form">
+      <div class="add-spus-inner">
+        <div class="log-form-title">New DCA Entry</div>
+        <div class="input-group"><label class="input-label" for="spus-form-date">Date</label><input class="input-field" id="spus-form-date" type="date"></div>
+        <div class="input-group"><label class="input-label" for="spus-form-amount">Amount invested (S$)</label><input class="input-field" id="spus-form-amount" type="number" min="0" step="0.01" placeholder="350.00"></div>
+        <div class="input-group"><label class="input-label" for="spus-form-units">Units bought</label><input class="input-field" id="spus-form-units" type="number" min="0" step="0.0001" placeholder="5.0000"></div>
+        <div class="input-group"><label class="input-label" for="spus-form-price">Price per unit (USD)</label><input class="input-field" id="spus-form-price" type="number" min="0" step="0.01" placeholder="51.23"></div>
+        <div class="input-group"><label class="input-label" for="spus-form-notes">Notes <span style="opacity:0.5;font-weight:400">(optional)</span></label><input class="input-field sm" id="spus-form-notes" type="text" placeholder="First DCA"></div>
+        <button class="btn-save" onclick="addSPUSEntry()">Save Entry</button>
+      </div>
+    </div>
+    <div class="spus-log" id="spus-log"></div>
+  </div>
+
+  <!-- EXPENSES -->
+  <div class="finance-tab-content" id="ftab-expenses">
+    <div class="exp-month-nav">
+      <button class="exp-month-btn" onclick="prevExpenseMonth()">&#8249;</button>
+      <span class="exp-month-label" id="exp-month-label">June 2026</span>
+      <button class="exp-month-btn" id="exp-next-btn" onclick="nextExpenseMonth()">&#8250;</button>
+    </div>
+    <div class="exp-summary">
+      <div class="exp-summary-label">Total spent</div>
+      <div class="exp-summary-right">
+        <div class="exp-summary-amount" id="exp-total-amount">S$0.00</div>
+        <div class="exp-summary-budget" id="exp-total-budget">/ S$500 budget</div>
+      </div>
+    </div>
+    <div class="exp-categories" id="exp-categories"></div>
+    <button class="btn-ghost" onclick="toggleAddExpense()">+ Log Expense</button>
+    <div class="add-expense-form" id="add-expense-form">
+      <div class="add-expense-inner">
+        <div class="log-form-title">New Expense</div>
+        <div class="input-group"><label class="input-label" for="exp-amount">Amount (S$)</label><input class="input-field" id="exp-amount" type="number" min="0" step="0.01" placeholder="0.00"></div>
+        <div class="input-group">
+          <label class="input-label" for="exp-category">Category</label>
+          <select class="select-field" id="exp-category">
+            <option value="food">&#127857; Food</option>
+            <option value="transport">&#128652; Transport</option>
+            <option value="bills">&#128241; Bills</option>
+            <option value="family">&#128155; Family</option>
+            <option value="health">&#127973; Health</option>
+            <option value="cigarettes">&#128684; Cigarettes</option>
+            <option value="misc">&#128230; Misc</option>
+          </select>
+        </div>
+        <div class="input-group"><label class="input-label" for="exp-desc">Description <span style="opacity:0.5;font-weight:400">(optional)</span></label><input class="input-field sm" id="exp-desc" type="text" placeholder="e.g. Lunch at hawker"></div>
+        <div class="input-group"><label class="input-label" for="exp-date">Date</label><input class="input-field" id="exp-date" type="date"></div>
+        <button class="btn-save" onclick="addExpense()">Save</button>
+      </div>
+    </div>
+    <div class="exp-entries" id="exp-entries"></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<!-- SYNC STATUS PILL -->
+<div class="sync-pill syncing" id="sync-pill">
+  <div class="sync-pill-dot"></div>
+  <span id="sync-label">Connecting…</span>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" data-page="home"      onclick="goPage('home')"><div class="nav-icon">&#8962;</div><span>Home</span></button>
+  <button class="nav-btn"        data-page="ippt"      onclick="goPage('ippt')"><div class="nav-icon">&#9889;</div><span>IPPT</span></button>
+  <button class="nav-btn"        data-page="blueprint" onclick="goPage('blueprint')"><div class="nav-icon">&#9670;</div><span>Plan</span></button>
+  <button class="nav-btn"        data-page="finance"   onclick="goPage('finance')"><div class="nav-icon">$</div><span>Money</span></button>
+  <button class="nav-btn"        data-page="doubt"     onclick="goPage('doubt')"><div class="nav-icon">&#9825;</div><span>Doubt</span></button>
+</nav>
+
+
+<!-- DOUBT MODE -->
+<div class="page" id="page-doubt">
+  <div class="topbar">
+    <div class="topbar-greet">Phase <span id="phase-doubt">01</span> &middot; <strong>Doubt Mode</strong></div>
+    <div class="topbar-status">Al-Quran</div>
+  </div>
+
+  <div class="doubt-header">
+    <div class="doubt-header-title">When doubt creeps in</div>
+    <div class="doubt-header-sub">Tap the card to cycle through. Read slowly.</div>
+  </div>
+
+  <!-- Rotating verse card -->
+  <div class="verse-card" onclick="nextVerse()" id="verse-card">
+    <div class="verse-theme" id="verse-theme"></div>
+    <div class="verse-arabic" id="verse-arabic"></div>
+    <div class="verse-english" id="verse-english"></div>
+    <div class="verse-ref" id="verse-ref"></div>
+  </div>
+  <div class="verse-nav" id="verse-nav"></div>
+  <div class="verse-hint">Tap card to cycle &middot; <span id="verse-counter"></span></div>
+
+  <div class="doubt-section-label">When you need to hear it</div>
+
+  <div class="affirmation-list">
+    <div class="affirmation-card"><div class="affirmation-num">01</div><div class="affirmation-text">Don&rsquo;t give up, no matter how far you fall.</div></div>
+    <div class="affirmation-card"><div class="affirmation-num">02</div><div class="affirmation-text">Don&rsquo;t let others determine who you want to be.</div></div>
+    <div class="affirmation-card"><div class="affirmation-num">03</div><div class="affirmation-text">If you want to go far, don&rsquo;t bother looking back.</div></div>
+    <div class="affirmation-card"><div class="affirmation-num">04</div><div class="affirmation-text">A day you fall does not determine a lifetime of failure.</div></div>
+    <div class="affirmation-card"><div class="affirmation-num">05</div><div class="affirmation-text">Once you drop &mdash; stand up, and get back up.</div></div>
+    <div class="affirmation-card"><div class="affirmation-num">06</div><div class="affirmation-text">Allah is always with you.</div></div>
+  </div>
+
+  <div class="doubt-dua">
+    <div class="doubt-dua-text">Insha&rsquo;Allah &middot; Bismillah &middot; Alhamdulillah</div>
+  </div>
+</div>
+<!-- END DOUBT MODE -->
+
+<div class="modal-overlay" id="clean-slate-modal">
+  <div class="modal-box">
+    <div class="modal-icon">&#10024;</div>
+    <div class="modal-title">CLEAN SLATE &#10022;</div>
+    <div class="modal-subtitle">Every debt cleared. You did it, Syazwan.<br>This is where the building begins.</div>
+    <button class="modal-close" onclick="closeCleanSlate()">Bismillah &#8212; let&#39;s build</button>
+  </div>
+</div>
+
+<script>
+  // ── SUPABASE CLIENT ─────────────────────────────────────
+  const _SB_URL = 'https://enefudfxixpoeogeleem.supabase.co';
+  const _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVuZWZ1ZGZ4aXhwb2VvZ2VsZWVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyOTg1NTksImV4cCI6MjA5NTg3NDU1OX0.6LfokuUb2-QecWpCQYZGgT5qRqjGIg5r2DYhjhQjGDI';
+  const sb = window.supabase.createClient(_SB_URL, _SB_KEY);
+  window.bp_sb = sb; // exposed for console testing
+
+  // These keys are local-only — never sent to Supabase
+  const _NO_SYNC = new Set(['debts_seeded_v3','savings_seeded_v1','spus_value']);
+
+  // ── STORAGE ──────────────────────────────────────────
+  // STORE.get  → reads from localStorage (instant, works offline)
+  // STORE.set  → writes localStorage + fires async Supabase sync
+  const STORE = {
+    get(key, def) {
+      try { const v = localStorage.getItem('bp_' + key); return v ? JSON.parse(v) : def; } catch(e) { return def; }
+    },
+    set(key, val) {
+      localStorage.setItem('bp_' + key, JSON.stringify(val));
+      // Sync to Supabase in background — skip local-only keys
+      if (!_NO_SYNC.has(key) && !key.startsWith('_')) _syncUp(key, val);
+    }
+  };
+
+  function getSGToday() { return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }); }
+  function getTodayKey() { return getSGToday(); }
+
+  function goPage(p) {
+    const target = document.getElementById('page-' + p);
+    if (!target) return;
+    document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+    target.classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    document.querySelector('.nav-btn[data-page="' + p + '"]')?.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function updateCountdown() {
+    const t = new Date('2026-08-12T00:00:00+08:00').getTime();
+    document.getElementById('countdown').textContent = Math.max(0, Math.floor((t - Date.now()) / 86400000));
+  }
+
+  function renderPhase() {
+    const p = getSGToday() >= '2026-08-12' ? '02' : '01';
+    document.getElementById('phase-home').textContent    = 'Phase ' + p;
+    document.getElementById('phase-ippt').textContent    = p;
+    document.getElementById('phase-finance').textContent = p;
+    document.getElementById('phase-plan').textContent    = p;
+    const dpEl = document.getElementById('phase-doubt'); if(dpEl) dpEl.textContent = p;
+  }
+
+  const URGENT_SCHEDULE = [
+    { from:'2026-05-24', to:'2026-05-26', pill:'● Urgent · This Week', pillClass:'urgent', title:'Blood Test Results · Follow-up',       desc:'Results expected May 23–26. Call clinic if no update by Day 5. Book follow-up consult.' },
+    { from:'2026-05-27', to:'2026-06-06', pill:'● Urgent · Finances',  pillClass:'urgent', title:'Survive to Payday · June 7',            desc:'Hold the line. Every dollar counts until June 7.' },
+    { from:'2026-06-07', to:'2026-06-07', pill:'● TODAY',              pillClass:'urgent', title:'Clear CIMB + GXS — Close Accounts',     desc:'Transfer out, then close both accounts today. Do not delay.' },
+    { from:'2026-06-08', to:'2026-07-06', pill:'● Urgent · Debt',      pillClass:'urgent', title:'Clear Shopee · July 7 target',          desc:'Pay off Shopee PayLater before July 7. Break it into weekly targets.' },
+    { from:'2026-07-07', to:'2026-07-07', pill:'● TODAY',              pillClass:'urgent', title:'Clear Shopee — Deactivate PayLater',    desc:'Final payment today. Deactivate Shopee PayLater after.' },
+    { from:'2026-07-08', to:'2026-07-28', pill:'● Urgent · IPPT',      pillClass:'urgent', title:'IPPT Test · July 29 · Target 61+',     desc:'Final push. Train hard, rest smart. 61+ points skips PTP at Tekong.' },
+    { from:'2026-07-29', to:'2026-07-29', pill:'● TODAY',              pillClass:'urgent', title:'IPPT TEST DAY',                         desc:'This is what you trained for. Give everything you have. Bismillah.' },
+    { from:'2026-07-30', to:'2026-08-11', pill:'● Final Prep',         pillClass:'urgent', title:'Final Prep · Enlist August 12',         desc:'Pack your bag, tie loose ends, rest well. One chapter ends, another begins.' },
+    { from:'2026-08-12', to:'2099-12-31', pill:'● Phase 02',           pillClass:'',       title:'National Service · Active',             desc:'You made it. Phase 02 begins. Stay strong, Syazwan. Bismillah.' }
+  ];
+
+  function renderUrgentCard() {
+    const today = getSGToday();
+    const m = URGENT_SCHEDULE.find(s => today >= s.from && today <= s.to);
+    if (!m) return;
+    document.getElementById('urgent-pill').className   = 'card-pill ' + m.pillClass;
+    document.getElementById('urgent-pill').textContent  = m.pill;
+    document.getElementById('urgent-title').textContent = m.title;
+    document.getElementById('urgent-desc').textContent  = m.desc;
+  }
+
+  const FOCUS_SCHEDULE = {
+    0: { title:'PC Setup OR Investing',        desc:"Pick one, go deep for 2–3 hours. Rest after. Meal prep if you haven't.",   link:{ text:'Open Investing chat →', url:'https://claude.ai/new' } },
+    1: { title:'Work day · rest tonight',      desc:'Prep for the week ahead. Light evening — no screen after 10pm.',            link:null },
+    2: { title:'Work day · optional learning', desc:'If energy allows: 30 min investing study after work.',                      link:{ text:'Open Investing chat →', url:'https://claude.ai/new' } },
+    3: { title:'Work day · midweek check-in',  desc:'How are habits tracking? Adjust if needed. Rest well tonight.',             link:null },
+    4: { title:'Work day · light evening',     desc:"Recovery day. Don't overload yourself. Sleep early.",                       link:null },
+    5: { title:'Work day · weekend prep',      desc:'Wrap up the week cleanly. Early sleep tonight — coding session tomorrow.',  link:null },
+    6: { title:'🛠 App Coding Session',        desc:"60–90 min focused build. Stick to this weekend's plan, don't skip ahead.", link:{ text:'Open App chat →', url:'https://claude.ai/new' } }
+  };
+
+  function renderFocusCard() {
+    const day = new Date().getDay();
+    const names = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const f = FOCUS_SCHEDULE[day];
+    const lnk = f.link ? '<a class="focus-link" href="' + f.link.url + '" target="_blank" rel="noopener">' + f.link.text + '</a>' : '';
+    document.getElementById('focus-card').innerHTML = '<div class="card focus"><div class="card-pill cyan">Today · ' + names[day] + '</div><div class="card-title">' + f.title + '</div><div class="card-desc">' + f.desc + '</div>' + lnk + '</div>';
+  }
+
+  const WORKOUTS = {
+    0:{rest:true, icon:'😴',label:'Rest Day',          desc:'Rest + meal prep. Recover well, eat right.'},
+    1:{rest:false,icon:'💪',label:'Push-ups + Sit-ups',desc:'Strength day. Max reps, clean form.'},
+    2:{rest:false,icon:'🏃',label:'2.4km Steady Run',  desc:'Easy, comfortable pace. Build your aerobic base.'},
+    3:{rest:false,icon:'⚡',label:'400m Intervals',    desc:'Sprint hard, recover, repeat. 4–6 sets.'},
+    4:{rest:true, icon:'😴',label:'Rest Day',          desc:'Recovery. Light stretching if you need it.'},
+    5:{rest:false,icon:'💪',label:'Push-ups + Sit-ups',desc:"Strength day. Push past last week's numbers."},
+    6:{rest:false,icon:'🏃',label:'2.4km Timed Run',  desc:'Race yourself. Note your time and track progress.'}
+  };
+
+  function renderWorkout() {
+    const w = WORKOUTS[new Date().getDay()];
+    document.getElementById('workout-card').innerHTML = '<div class="workout-card ' + (w.rest?'rest':'') + '"><div class="workout-icon">' + w.icon + '</div><div class="workout-info"><div class="workout-eyebrow">' + (w.rest?'Today':"Today's Workout") + '</div><div class="workout-name">' + w.label + '</div><div class="workout-desc">' + w.desc + '</div></div></div>';
+  }
+
+  function renderReminders() {
+    const c = document.getElementById('reminders'), w = [];
+    const td = STORE.get('checkin_' + getTodayKey(), {});
+    if (!Object.values(td).some(v => v === true)) w.push({icon:'🔔', text:"You haven't checked in today"});
+    const ip = STORE.get('ippt', {});
+    if (!ip.savedAt) { w.push({icon:'📋', text:'IPPT log overdue — no entry yet'}); }
+    else { const ds = Math.floor((Date.now() - new Date(ip.savedAt).getTime()) / 86400000); if (ds >= 7) { const str = new Date(ip.savedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'Asia/Singapore'}); w.push({icon:'📋', text:'IPPT log overdue — last entry ' + str}); } }
+    if (!w.length) { c.innerHTML = ''; return; }
+    c.innerHTML = '<div class="reminders">' + w.map(x => '<div class="reminder-item"><span class="reminder-icon">' + x.icon + '</span><span>' + x.text + '</span></div>').join('') + '</div>';
+  }
+
+  const HABITS = [{id:'prayer',label:'🕌  Prayer · 5 daily'},{id:'training',label:'⚡  IPPT training'},{id:'study',label:'📚  Study · 30+ min'},{id:'parents',label:'💛  Spoke to parents'}];
+
+  function renderCheckin() {
+    const data = STORE.get('checkin_' + getTodayKey(), {});
+    document.getElementById('habit-list').innerHTML = HABITS.map(h => '<div class="habit-row" onclick="toggleHabit(\'' + h.id + '\')"><span class="habit-label">' + h.label + '</span><div class="habit-toggle ' + (data[h.id]?'done':'') + '">' + (data[h.id]?'✓':'') + '</div></div>').join('');
+    updateStreak(); renderReminders();
+  }
+
+  function toggleHabit(id) { const key='checkin_'+getTodayKey(), data=STORE.get(key,{}); data[id]=!data[id]; STORE.set(key,data); renderCheckin(); }
+
+  function updateStreak() {
+    let s=0; const today=new Date();
+    for (let i=0;i<365;i++) { const d=new Date(today); d.setDate(d.getDate()-i); const data=STORE.get('checkin_'+d.toISOString().split('T')[0],{}); const done=HABITS.every(h=>data[h.id]); if(done)s++; else if(i>0)break; else continue; }
+    document.getElementById('streak-num').textContent = s;
+  }
+
+  function toggleForm() {
+    const f=document.getElementById('log-form'); f.classList.toggle('open');
+    if (f.classList.contains('open')) { const s=STORE.get('ippt',{}); if(s.pushup)document.getElementById('input-pushup').value=s.pushup; if(s.situp)document.getElementById('input-situp').value=s.situp; if(s.run)document.getElementById('input-run').value=s.run; }
+  }
+
+  function saveIPPT() {
+    const p=document.getElementById('input-pushup').value.trim(), s=document.getElementById('input-situp').value.trim(), r=document.getElementById('input-run').value.trim();
+    const data={}; if(p)data.pushup=p; if(s)data.situp=s; if(r)data.run=r; data.savedAt=new Date().toISOString();
+    STORE.set('ippt',data); document.getElementById('log-form').classList.remove('open'); renderIPPT(); renderReminders();
+    const msg=document.getElementById('confirm-msg'); msg.classList.add('show'); setTimeout(()=>msg.classList.remove('show'),3000);
+  }
+
+  function renderIPPT() {
+    const d=STORE.get('ippt',{}), pu=document.getElementById('ippt-pushup'), su=document.getElementById('ippt-situp'), ru=document.getElementById('ippt-run');
+    if(d.pushup){pu.textContent=d.pushup;pu.classList.add('has');}else{pu.textContent='—';pu.classList.remove('has');}
+    if(d.situp){su.textContent=d.situp;su.classList.add('has');}else{su.textContent='—';su.classList.remove('has');}
+    if(d.run){ru.textContent=d.run;ru.classList.add('has');}else{ru.textContent='—';ru.classList.remove('has');}
+  }
+
+  function getCurrentPhase() { const t=getSGToday(); if(t<='2026-08-11')return 1; if(t<='2028-08-31')return 2; if(t<='2033-12-31')return 3; if(t<='2039-12-31')return 4; return 5; }
+  function togglePhase(n) { document.getElementById('phase-body-'+n).classList.toggle('open'); document.getElementById('phase-chevron-'+n).classList.toggle('open'); }
+  function initPlanPage() {
+    const cur=getCurrentPhase(), labels={1:'Phase 01',2:'Phase 02',3:'Phase 03',4:'Phase 04',5:'Phase 05 · Optional'};
+    for(let i=1;i<=5;i++) {
+      const card=document.getElementById('phase-card-'+i), pill=document.getElementById('phase-pill-'+i), body=document.getElementById('phase-body-'+i), chev=document.getElementById('phase-chevron-'+i);
+      if(i<cur){card.classList.add('past');pill.classList.add('past');pill.textContent=labels[i]+' · Complete';}
+      else if(i===cur){card.classList.add('current');pill.classList.add('current');pill.textContent='● '+labels[i]+' · Now';body.classList.add('open');chev.classList.add('open');}
+      else{pill.classList.add('future');pill.textContent=labels[i];}
+    }
+  }
+
+  function switchFinanceTab(tab) {
+    document.querySelectorAll('.finance-tab-content').forEach(el=>el.classList.remove('active'));
+    document.getElementById('ftab-'+tab).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+    document.querySelector('.tab-btn[data-tab="'+tab+'"]').classList.add('active');
+  }
+
+  // NET WORTH — auto-computed from savings + spus_value − debts
+  function calcNetWorth() {
+    const sav=STORE.get('savings',[]), totalSav=sav.reduce((s,b)=>s+Number(b.balance),0);
+    const spusVal=STORE.get('spus_value',0), assets=totalSav+spusVal;
+    const debts=STORE.get('debts',[]), totalDebt=debts.filter(d=>!d.cleared).reduce((s,d)=>s+Number(d.amount),0);
+    return {netWorth:assets-totalDebt, assets, totalDebt};
+  }
+
+  function renderNetWorth() {
+    const {netWorth,assets,totalDebt}=calcNetWorth();
+    const abs=Math.abs(netWorth), fmt='S$'+abs.toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const disp=netWorth<0?'−'+fmt:netWorth>0?'+'+fmt:fmt, cls=netWorth<0?'negative':netWorth===0?'zero':'positive';
+    const sub=netWorth<0?'Clearing to Clean Slate':netWorth===0?'Clean Slate achieved ✓':'Building wealth · halal · slow';
+    const el=document.getElementById('nw-num'); el.textContent=disp; el.className='nw-num '+cls;
+    document.getElementById('nw-subtitle').textContent=sub;
+    document.getElementById('nw-savings-display').textContent='S$'+assets.toFixed(2);
+    document.getElementById('nw-debts-display').textContent='S$'+totalDebt.toFixed(2);
+  }
+
+  // DEBTS
+  function seedDebts() {
+    if(STORE.get('debts_seeded_v3',false))return;
+    STORE.set('debts',[
+      {id:'d1',name:'CIMB AWSM',    amount:493.73,targetDate:'2026-06-07',cleared:false},
+      {id:'d2',name:'GXS Flexicard',amount:492.72,targetDate:'2026-06-07',cleared:false},
+      {id:'d3',name:'Shopee BNPL',  amount:514.02,targetDate:'2026-07-07',cleared:false},
+      {id:'d4',name:'Grab',         amount:79.48, targetDate:'2026-06-07',cleared:false},
+      {id:'d5',name:'Shideeq',      amount:50,    targetDate:'2026-06-07',cleared:false},
+      {id:'d6',name:'Jordan',       amount:30,    targetDate:'2026-06-07',cleared:false},
+      {id:'d7',name:'Mummy',        amount:125,   targetDate:'2026-06-07',cleared:false},
+      {id:'d8',name:'Claude (sub)', amount:30,    targetDate:'2026-06-07',cleared:false}
+    ]);
+    STORE.set('debts_seeded_v3',true);
+  }
+
+  function formatDate(ds) { if(!ds)return''; return new Date(ds+'T00:00:00+08:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Singapore'}); }
+
+  function renderDebtsTab() {
+    const debts=STORE.get('debts',[]), el=document.getElementById('debt-list');
+    if(!debts.length){el.innerHTML='<div class="coming-soon" style="padding:28px 20px"><div class="coming-soon-icon">🎉</div><div class="coming-soon-title">No debts tracked</div><div class="coming-soon-desc">Add one below, or enjoy the clean slate.</div></div>';return;}
+    el.innerHTML=debts.map(d=>'<div class="debt-row'+(d.cleared?' cleared':'')+'"><div class="debt-main"><div class="debt-name">'+d.name+'</div><div class="debt-amount">S$'+Number(d.amount).toFixed(2)+'</div></div><div class="debt-footer"><div class="debt-target">'+(d.targetDate?'Target: '+formatDate(d.targetDate):'No target set')+'</div>'+(d.cleared?'<div class="debt-cleared-badge">Cleared ✓</div><div class="debt-actions"><button class="debt-btn delete" onclick="deleteDebt(\''+d.id+'\')">×</button></div>':'<div class="debt-actions"><button class="debt-btn clear" onclick="clearDebt(\''+d.id+'\')">Mark cleared</button><button class="debt-btn delete" onclick="deleteDebt(\''+d.id+'\')">×</button></div>')+'</div></div>').join('');
+  }
+
+  function clearDebt(id) { const debts=STORE.get('debts',[]),d=debts.find(x=>x.id===id); if(d)d.cleared=true; STORE.set('debts',debts); renderDebtsTab(); renderNetWorth(); checkCleanSlate(); }
+  function deleteDebt(id) { STORE.set('debts',STORE.get('debts',[]).filter(d=>d.id!==id)); renderDebtsTab(); renderNetWorth(); }
+  function toggleAddDebt() { document.getElementById('add-debt-form').classList.toggle('open'); }
+  function addDebt() {
+    const name=document.getElementById('new-debt-name').value.trim(), amount=parseFloat(document.getElementById('new-debt-amount').value), date=document.getElementById('new-debt-date').value;
+    if(!name||isNaN(amount)||amount<=0)return;
+    const debts=STORE.get('debts',[]); debts.push({id:'d'+Date.now(),name,amount,targetDate:date||'',cleared:false}); STORE.set('debts',debts);
+    document.getElementById('new-debt-name').value=''; document.getElementById('new-debt-amount').value=''; document.getElementById('new-debt-date').value='';
+    document.getElementById('add-debt-form').classList.remove('open'); renderDebtsTab(); renderNetWorth();
+  }
+  function checkCleanSlate() { const d=STORE.get('debts',[]); if(d.length&&d.every(x=>x.cleared))document.getElementById('clean-slate-modal').classList.add('show'); }
+  function closeCleanSlate() { document.getElementById('clean-slate-modal').classList.remove('show'); }
+
+  // SAVINGS
+  function seedSavings() {
+    if(STORE.get('savings_seeded_v1',false))return;
+    STORE.set('savings',[{id:'s1',name:'Cash on hand',balance:15,target:null},{id:'s2',name:'OCBC',balance:0,target:500}]);
+    STORE.set('savings_seeded_v1',true);
+  }
+
+  function renderSavingsTab() {
+    const savings=STORE.get('savings',[]), el=document.getElementById('savings-list');
+    if(!savings.length){el.innerHTML='<div class="coming-soon" style="padding:28px 20px"><div class="coming-soon-icon">🏦</div><div class="coming-soon-title">No buckets yet</div><div class="coming-soon-desc">Add a savings bucket below.</div></div>';return;}
+    el.innerHTML=savings.map(s=>{
+      const bal=Number(s.balance), disp='S$'+bal.toFixed(2);
+      let prog='';
+      if(s.target){const pct=Math.min(100,(bal/s.target)*100); prog='<div class="savings-progress-row"><span>'+disp+' of S$'+Number(s.target).toLocaleString('en-SG')+'</span><span>'+Math.round(pct)+'%</span></div><div class="savings-bar-track"><div class="savings-bar-fill'+(pct>=100?' complete':'')+'" style="width:'+pct+'%"></div></div>';}
+      return '<div class="savings-bucket"><div class="savings-bucket-header"><div class="savings-bucket-name">'+s.name+'</div><div><span class="savings-bucket-balance" id="bal-display-'+s.id+'" onclick="startEditBalance(\''+s.id+'\')">'+disp+'</span><input class="savings-balance-input" id="bal-input-'+s.id+'" type="number" min="0" step="0.01" value="'+bal+'" style="display:none" onblur="saveBalance(\''+s.id+'\')" onkeydown="if(event.key===\'Enter\')this.blur()"></div></div>'+prog+'<div class="savings-bucket-footer"><button class="savings-delete-btn" onclick="deleteSavingsBucket(\''+s.id+'\')">×</button></div></div>';
+    }).join('');
+  }
+
+  function startEditBalance(id) { document.getElementById('bal-display-'+id).style.display='none'; const i=document.getElementById('bal-input-'+id); i.style.display='inline-block'; i.focus(); i.select(); }
+  function saveBalance(id) { const i=document.getElementById('bal-input-'+id), v=parseFloat(i.value); if(!isNaN(v)&&v>=0){const sav=STORE.get('savings',[]),b=sav.find(s=>s.id===id); if(b){b.balance=v;STORE.set('savings',sav);}} renderSavingsTab(); renderNetWorth(); }
+  function deleteSavingsBucket(id) { STORE.set('savings',STORE.get('savings',[]).filter(s=>s.id!==id)); renderSavingsTab(); renderNetWorth(); }
+  function toggleAddSavings() { document.getElementById('add-savings-form').classList.toggle('open'); }
+  function addSavingsBucket() {
+    const name=document.getElementById('new-savings-name').value.trim(), balance=parseFloat(document.getElementById('new-savings-balance').value)||0, target=parseFloat(document.getElementById('new-savings-target').value);
+    if(!name)return;
+    const sav=STORE.get('savings',[]); sav.push({id:'s'+Date.now(),name,balance,target:(!isNaN(target)&&target>0)?target:null}); STORE.set('savings',sav);
+    document.getElementById('new-savings-name').value=''; document.getElementById('new-savings-balance').value=''; document.getElementById('new-savings-target').value='';
+    document.getElementById('add-savings-form').classList.remove('open'); renderSavingsTab(); renderNetWorth();
+  }
+
+  // ── SPUS ──────────────────────────────────────────────
+  // Storage keys:
+  //   bp_spus_log      → array of DCA entries
+  //   bp_spus_price    → current price per unit (USD)
+  //   bp_spus_rate     → USD/SGD exchange rate (default 1.35)
+  //   bp_spus_value    → computed current value (SGD) — read by calcNetWorth()
+  //
+  // renderSPUSTab() computes everything and writes spus_value
+  // so the net worth card updates automatically.
+
+  function renderSPUSTab() {
+    const log=STORE.get('spus_log',[]), price=STORE.get('spus_price',0), rate=STORE.get('spus_rate',1.35);
+    const totalInvested=log.reduce((s,e)=>s+Number(e.amountSGD),0);
+    const totalUnits=log.reduce((s,e)=>s+Number(e.units),0);
+    const currentValue=totalUnits*price*rate;
+    const gl=totalInvested>0?((currentValue-totalInvested)/totalInvested*100):null;
+
+    // Write to spus_value so calcNetWorth picks it up
+    STORE.set('spus_value', currentValue);
+
+    // Stats
+    document.getElementById('spus-invested').textContent='S$'+totalInvested.toFixed(2);
+    document.getElementById('spus-value-disp').textContent='S$'+currentValue.toFixed(2);
+    const glEl=document.getElementById('spus-gl'), glSubEl=document.getElementById('spus-gl-sub');
+    if(gl!==null){
+      glEl.textContent=(gl>=0?'+':'')+gl.toFixed(1)+'%';
+      glEl.className='spus-stat-val '+(gl>=0?'gain':'loss');
+      const diff=currentValue-totalInvested;
+      glSubEl.textContent=(diff>=0?'+S$':'-S$')+Math.abs(diff).toFixed(2);
+    } else { glEl.textContent='—'; glEl.className='spus-stat-val'; glSubEl.textContent='—'; }
+
+    // Rate displays
+    document.getElementById('spus-price-disp').textContent=price>0?'$'+price.toFixed(2):'$—';
+    document.getElementById('spus-rate-disp').textContent=rate.toFixed(3);
+    document.getElementById('spus-units-disp').textContent=totalUnits.toFixed(4);
+
+    // Log entries (newest first)
+    const logEl=document.getElementById('spus-log');
+    if(!log.length){logEl.innerHTML='<div style="text-align:center;padding:24px 0;color:var(--text-dim);font-size:14px;">No entries yet. Log your first DCA below.</div>';return;}
+    logEl.innerHTML=[...log].reverse().map(e=>{
+      const fd=new Date(e.date+'T00:00:00+08:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      return '<div class="spus-entry"><div class="spus-entry-top"><div class="spus-entry-left"><div class="spus-entry-date">'+fd+'</div><div class="spus-entry-details">'+Number(e.units).toFixed(4)+' units @ $'+Number(e.priceUSD).toFixed(2)+' USD</div>'+(e.notes?'<div class="spus-entry-notes">'+e.notes+'</div>':'')+'</div><div class="spus-entry-right"><div class="spus-entry-amount">S$'+Number(e.amountSGD).toFixed(2)+'</div><button class="spus-del-btn" onclick="deleteSPUSEntry(\''+e.id+'\')">×</button></div></div></div>';
+    }).join('');
+  }
+
+  function startEditSPUS(field) {
+    const disp=document.getElementById('spus-'+field+'-disp'), input=document.getElementById('spus-'+field+'-edit');
+    const cur=field==='price'?STORE.get('spus_price',0):STORE.get('spus_rate',1.35);
+    disp.style.display='none'; input.style.display='inline-block'; input.value=cur; input.focus(); input.select();
+  }
+
+  function saveSPUSField(field) {
+    const input=document.getElementById('spus-'+field+'-edit'), val=parseFloat(input.value);
+    if(!isNaN(val)&&val>0) STORE.set(field==='price'?'spus_price':'spus_rate', val);
+    input.style.display='none'; document.getElementById('spus-'+field+'-disp').style.display='inline';
+    renderSPUSTab(); renderNetWorth();
+  }
+
+  function toggleAddSPUS() {
+    const f=document.getElementById('add-spus-form'); f.classList.toggle('open');
+    if(f.classList.contains('open')&&!document.getElementById('spus-form-date').value) document.getElementById('spus-form-date').value=getSGToday();
+  }
+
+  function addSPUSEntry() {
+    const date=document.getElementById('spus-form-date').value;
+    const amountSGD=parseFloat(document.getElementById('spus-form-amount').value);
+    const units=parseFloat(document.getElementById('spus-form-units').value);
+    const priceUSD=parseFloat(document.getElementById('spus-form-price').value);
+    const notes=document.getElementById('spus-form-notes').value.trim();
+    if(!date||isNaN(amountSGD)||amountSGD<=0||isNaN(units)||units<=0||isNaN(priceUSD)||priceUSD<=0)return;
+    const log=STORE.get('spus_log',[]);
+    log.push({id:'sp'+Date.now(),date,amountSGD,units,priceUSD,notes});
+    STORE.set('spus_log',log);
+    document.getElementById('spus-form-date').value=''; document.getElementById('spus-form-amount').value='';
+    document.getElementById('spus-form-units').value=''; document.getElementById('spus-form-price').value='';
+    document.getElementById('spus-form-notes').value='';
+    document.getElementById('add-spus-form').classList.remove('open');
+    renderSPUSTab(); renderNetWorth();
+  }
+
+  function deleteSPUSEntry(id) { STORE.set('spus_log',STORE.get('spus_log',[]).filter(e=>e.id!==id)); renderSPUSTab(); renderNetWorth(); }
+
+  // ── EXPENSES ──────────────────────────────────────────
+  // Storage: bp_expenses_YYYY-MM → array of entries for that month
+  // Resets monthly naturally (each month has its own key).
+  // Historical months viewable by navigating back.
+
+  let currentExpenseMonth = getSGToday().slice(0,7); // 'YYYY-MM'
+
+  const EXPENSE_CATS = [
+    {id:'food',       label:'Food',       icon:'🍱', budget:200},
+    {id:'transport',  label:'Transport',  icon:'🚌', budget:60},
+    {id:'bills',      label:'Bills',      icon:'📱', budget:50},
+    {id:'family',     label:'Family',     icon:'💛', budget:50},
+    {id:'health',     label:'Health',     icon:'🏥', budget:30},
+    {id:'cigarettes', label:'Cigarettes', icon:'🚬', budget:30},
+    {id:'misc',       label:'Misc',       icon:'📦', budget:80}
+  ];
+
+  const TOTAL_BUDGET = EXPENSE_CATS.reduce((s,c)=>s+c.budget,0); // 500
+
+  function fmtExpMonth(ym) {
+    const parts=ym.split('-'), months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[parseInt(parts[1])-1]+' '+parts[0];
+  }
+
+  function prevExpenseMonth() {
+    const parts=currentExpenseMonth.split('-').map(Number);
+    currentExpenseMonth=parts[1]===1?(parts[0]-1)+'-12':parts[0]+'-'+String(parts[1]-1).padStart(2,'0');
+    renderExpensesTab();
+  }
+
+  function nextExpenseMonth() {
+    const today=getSGToday().slice(0,7); if(currentExpenseMonth>=today)return;
+    const parts=currentExpenseMonth.split('-').map(Number);
+    currentExpenseMonth=parts[1]===12?(parts[0]+1)+'-01':parts[0]+'-'+String(parts[1]+1).padStart(2,'0');
+    renderExpensesTab();
+  }
+
+  function renderExpensesTab() {
+    document.getElementById('exp-month-label').textContent=fmtExpMonth(currentExpenseMonth);
+    const today=getSGToday().slice(0,7);
+    document.getElementById('exp-next-btn').style.opacity=currentExpenseMonth>=today?'0.3':'1';
+
+    const expenses=STORE.get('expenses_'+currentExpenseMonth,[]);
+    const total=expenses.reduce((s,e)=>s+Number(e.amount),0);
+    document.getElementById('exp-total-amount').textContent='S$'+total.toFixed(2);
+    document.getElementById('exp-total-budget').textContent='/ S$'+TOTAL_BUDGET+' budget';
+
+    // Category bars
+    document.getElementById('exp-categories').innerHTML=EXPENSE_CATS.map(cat=>{
+      const spent=expenses.filter(e=>e.category===cat.id).reduce((s,e)=>s+Number(e.amount),0);
+      const pct=Math.min(100,(spent/cat.budget)*100), over=spent>cat.budget;
+      return '<div class="exp-cat"><div class="exp-cat-header"><div class="exp-cat-name">'+cat.icon+' '+cat.label+'</div><div class="exp-cat-amounts'+(over?' over':'')+'">S$'+spent.toFixed(2)+' / S$'+cat.budget+(over?' (+S$'+(spent-cat.budget).toFixed(2)+')':" (S$"+(cat.budget-spent).toFixed(2)+' left)')+'</div></div><div class="exp-bar-track"><div class="exp-bar-fill'+(over?' over':'')+'" style="width:'+pct+'%"></div></div></div>';
+    }).join('');
+
+    // Entry list (newest first)
+    const entEl=document.getElementById('exp-entries');
+    if(!expenses.length){entEl.innerHTML='<div style="text-align:center;padding:20px 0;color:var(--text-dim);font-size:14px;">No expenses logged this month.</div>';return;}
+    const sorted=[...expenses].sort((a,b)=>b.date.localeCompare(a.date));
+    entEl.innerHTML=sorted.map(e=>{
+      const cat=EXPENSE_CATS.find(c=>c.id===e.category);
+      const fd=new Date(e.date+'T00:00:00+08:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      return '<div class="exp-entry"><div class="exp-entry-icon">'+(cat?cat.icon:'📦')+'</div><div class="exp-entry-info"><div class="exp-entry-desc">'+(e.desc||(cat?cat.label:'Misc'))+'</div><div class="exp-entry-meta">'+fd+' · '+(cat?cat.label:'Misc')+'</div></div><div class="exp-entry-amount">S$'+Number(e.amount).toFixed(2)+'</div><button class="exp-entry-del" onclick="deleteExpense(\''+e.id+'\')">×</button></div>';
+    }).join('');
+  }
+
+  function toggleAddExpense() {
+    const f=document.getElementById('add-expense-form'); f.classList.toggle('open');
+    if(f.classList.contains('open')&&!document.getElementById('exp-date').value) document.getElementById('exp-date').value=getSGToday();
+  }
+
+  function addExpense() {
+    const amount=parseFloat(document.getElementById('exp-amount').value);
+    const category=document.getElementById('exp-category').value;
+    const desc=document.getElementById('exp-desc').value.trim();
+    const date=document.getElementById('exp-date').value||getSGToday();
+    if(isNaN(amount)||amount<=0)return;
+    const month=date.slice(0,7), expenses=STORE.get('expenses_'+month,[]);
+    expenses.push({id:'ex'+Date.now(),date,category,amount,desc});
+    STORE.set('expenses_'+month,expenses);
+    document.getElementById('exp-amount').value=''; document.getElementById('exp-desc').value='';
+    document.getElementById('add-expense-form').classList.remove('open');
+    if(month===currentExpenseMonth)renderExpensesTab();
+  }
+
+  function deleteExpense(id) { const exp=STORE.get('expenses_'+currentExpenseMonth,[]); STORE.set('expenses_'+currentExpenseMonth,exp.filter(e=>e.id!==id)); renderExpensesTab(); }
+
+
+  // ── DOUBT MODE ────────────────────────────────────────────────────────────
+  //
+  // VERSES array — each entry has:
+  //   theme   : the context / why this verse
+  //   arabic  : exact Arabic text
+  //   english : Saheeh International translation
+  //   ref     : Surah:Ayah reference
+  //
+  const VERSES = [
+    {
+      theme: "On Allah's forgiveness \u2014 Al-Ghafur",
+      arabic: "\u0642\u0644 \u064a\u0627 \u0639\u0650\u0628\u064e\u0627\u062f\u0650\u064a \u0627\u0644\u0651\u064e\u0630\u0650\u064a\u0646\u064e \u0623\u064e\u0633\u0652\u0631\u064e\u0641\u064f\u0648\u0627 \u0639\u064e\u0644\u064e\u0649\u0670 \u0623\u064e\u0646\u0641\u064f\u0633\u0650\u0647\u0650\u0645 \u0644\u064e\u0627 \u062a\u064e\u0642\u0652\u0646\u064e\u0637\u064f\u0648\u0627 \u0645\u0650\u0646 \u0631\u064e\u0651\u062d\u0652\u0645\u064e\u0629\u0650 \u0627\u0644\u0644\u0651\u0647\u0650 \u25aa\u0625\u0650\u0646\u064e\u0651 \u0627\u0644\u0644\u0651\u0647\u064e \u064a\u064e\u063a\u0652\u0641\u0650\u0631\u064f \u0627\u0644\u0630\u064f\u0651\u0646\u064f\u0648\u0628\u064e \u062c\u064e\u0645\u0650\u064a\u0639\u064b\u0627 \u25aa\u0625\u0650\u0646\u064e\u0651\u0647\u064f \u0647\u064f\u0648\u064e \u0627\u0644\u0652\u063a\u064e\u0641\u064f\u0648\u0631\u064f \u0627\u0644\u0631\u064e\u0651\u062d\u0650\u064a\u0645\u064f",
+      english: "Say, \u2018O My servants who have transgressed against themselves \u2014 do not despair of the mercy of Allah. Indeed, Allah forgives all sins. Indeed, it is He who is the Forgiving, the Merciful.\u2019",
+      ref: "Surah Az-Zumar \u2014 39:53"
+    },
+    {
+      theme: "On patience and prayer",
+      arabic: "\u064a\u064e\u0670\u0623\u064e\u064a\u064f\u0651\u0647\u064e\u0627 \u0627\u0644\u0651\u064e\u0630\u0650\u064a\u0646\u064e \u0622\u0645\u064e\u0646\u064f\u0648\u0627 \u0627\u0633\u0652\u062a\u064e\u0639\u0650\u064a\u0646\u064f\u0648\u0627 \u0628\u0650\u0627\u0644\u0635\u064e\u0651\u0628\u0652\u0631\u0650 \u0648\u064e\u0627\u0644\u0635\u064e\u0651\u0644\u064e\u0648\u0670\u0629\u0650 \u25aa\u0625\u0650\u0646\u064e\u0651 \u0627\u0644\u0644\u0651\u0647\u064e \u0645\u064e\u0639\u064e \u0627\u0644\u0635\u064e\u0651\u0627\u0628\u0650\u0631\u0650\u064a\u0646\u064e",
+      english: "O you who have believed, seek help through patience and prayer. Indeed, Allah is with the patient.",
+      ref: "Surah Al-Baqarah \u2014 2:153"
+    },
+    {
+      theme: "On provision from the unexpected",
+      arabic: "\u0648\u064e\u0645\u064e\u0646 \u064a\u064e\u062a\u064e\u0651\u0642\u0650 \u0627\u0644\u0644\u0651\u0647\u064e \u064a\u064e\u062c\u0652\u0639\u064e\u0644 \u0644\u064e\u0651\u0647\u064f \u0645\u064e\u062e\u0652\u0631\u064e\u062c\u064b\u0627 \u0648\u064e\u064a\u064e\u0631\u0652\u0632\u064f\u0642\u0652\u0647\u064f \u0645\u0650\u0646\u0652 \u062d\u064e\u064a\u0652\u062b\u064f \u0644\u064e\u0627 \u064a\u064e\u062d\u0652\u062a\u064e\u0633\u0650\u0628\u064f \u25aa\u0648\u064e\u0645\u064e\u0646 \u064a\u064e\u062a\u064e\u0648\u064e\u0643\u064e\u0651\u0644\u0652 \u0639\u064e\u0644\u064e\u0649 \u0627\u0644\u0644\u0651\u0647\u0650 \u0641\u064e\u0647\u064f\u0648\u064e \u062d\u064e\u0633\u0652\u0628\u064f\u0647\u064f",
+      english: "And whoever fears Allah \u2014 He will make for him a way out. And will provide for him from where he does not expect. And whoever relies upon Allah \u2014 then He is sufficient for him.",
+      ref: "Surah At-Talaq \u2014 65:2\u20133"
+    },
+    {
+      theme: "On bearing what Allah places on you",
+      arabic: "\u0644\u064e\u0627 \u064a\u064f\u0643\u064e\u0644\u0650\u0651\u0641\u064f \u0627\u0644\u0644\u0651\u0647\u064f \u0646\u064e\u0641\u0652\u0633\u064b\u0627 \u0625\u0650\u0644\u064e\u0651\u0627 \u0648\u064f\u0633\u0652\u0639\u064e\u0647\u064e\u0627",
+      english: "Allah does not burden a soul beyond that it can bear.",
+      ref: "Surah Al-Baqarah \u2014 2:286"
+    },
+    {
+      theme: "On the heart finding rest",
+      arabic: "\u0623\u064e\u0644\u064e\u0627 \u0628\u0650\u0630\u0650\u0643\u0652\u0631\u0650 \u0627\u0644\u0644\u0651\u0647\u0650 \u062a\u064e\u0637\u0652\u0645\u064e\u0626\u0650\u0646\u064e\u0651 \u0627\u0644\u0652\u0642\u064f\u0644\u064f\u0648\u0628\u064f",
+      english: "Verily, in the remembrance of Allah do hearts find rest.",
+      ref: "Surah Ar-Ra\u2019d \u2014 13:28"
+    },
+    {
+      theme: "On your parents",
+      arabic: "\u0648\u064e\u0642\u064e\u0636\u064e\u0670\u0649 \u0631\u064e\u0628\u064e\u0651\u0643\u064e \u0623\u064e\u0644\u064e\u0651\u0627 \u062a\u064e\u0639\u0652\u0628\u064f\u062f\u064f\u0648\u0627 \u0625\u0650\u0644\u064e\u0651\u0627 \u0625\u0650\u064a\u064e\u0651\u0627\u0647\u064f \u0648\u064e\u0628\u0650\u0627\u0644\u0652\u0648\u064e\u0670\u0644\u0650\u062f\u064e\u064a\u0652\u0646\u0650 \u0625\u0650\u062d\u0652\u0633\u064e\u0670\u0646\u064b\u0627 \u25aa \u0625\u0650\u0645\u064e\u0651\u0627 \u064a\u064e\u0628\u0652\u0644\u064f\u063a\u064e\u0646\u064e\u0651 \u0639\u0650\u0646\u062f\u064e\u0643\u064e \u0627\u0644\u0652\u0643\u0650\u0628\u064e\u0631\u064e \u0623\u064e\u062d\u064e\u062f\u064f\u0647\u064f\u0645\u064e\u0627 \u0623\u064e\u0648\u0652 \u0643\u0650\u0644\u064e\u0627\u0647\u064f\u0645\u064e\u0627 \u0641\u064e\u0644\u064e\u0627 \u062a\u064e\u0642\u064f\u0644 \u0644\u064e\u0651\u0647\u064f\u0645\u064e\u0627 \u0623\u064f\u0641\u0651 \u0648\u064e\u0644\u064e\u0627 \u062a\u064e\u0646\u0652\u0647\u064e\u0631\u0652\u0647\u064f\u0645\u064e\u0627 \u0648\u064e\u0642\u064f\u0644 \u0644\u064e\u0651\u0647\u064f\u0645\u064e\u0627 \u0642\u064e\u0648\u0652\u0644\u064b\u0627 \u0643\u064e\u0631\u0650\u064a\u0645\u064b\u0627",
+      english: "Your Lord has decreed that you worship none but Him, and that you be kind to parents. Whether one or both of them reach old age with you, say not to them \u2018uff\u2019, nor repel them, but speak to them a noble word.",
+      ref: "Surah Al-Isra\u2019 \u2014 17:23"
+    },
+    {
+      theme: "Ayatul Kursi \u2014 for protection",
+      arabic: "\u0627\u0644\u0644\u0651\u0647\u064f \u0644\u064e\u0622 \u0625\u0650\u0644\u064e\u0670\u0647\u064e \u0625\u0650\u0644\u064e\u0651\u0627 \u0647\u064f\u0648\u064e \u0627\u0644\u0652\u062d\u064e\u064a\u064e\u0651 \u0627\u0644\u0652\u0642\u064e\u064a\u064e\u0651\u0648\u0645\u064f \u25aa \u0644\u064e\u0627 \u062a\u064e\u0623\u0652\u062e\u064f\u0630\u064f\u0647\u064f \u0633\u0650\u0646\u064e\u0629\u064c \u0648\u064e\u0644\u064e\u0627 \u0646\u064e\u0648\u0652\u0645\u064c \u25aa \u0644\u064e\u0651\u0647\u064f \u0645\u064e\u0627 \u0641\u0650\u064a \u0627\u0644\u0633\u064e\u0651\u0645\u064e\u0670\u0648\u064e\u0670\u062a\u0650 \u0648\u064e\u0645\u064e\u0627 \u0641\u0650\u064a \u0627\u0644\u0652\u0623\u064e\u0631\u0652\u0636\u0650 \u25aa \u0645\u064e\u0646 \u0630\u064e\u0627 \u0627\u0644\u064e\u0651\u0630\u0650\u064a \u064a\u064e\u0634\u0652\u0641\u064e\u0639\u064f \u0639\u0650\u0646\u062d\u064e\u0647\u064f\u00d7 \u0625\u0650\u0644\u064e\u0651\u0627 \u0628\u0650\u0625\u0630\u0652\u0646\u0650\u0647\u0650 \u25aa \u064a\u064e\u0639\u0652\u0644\u064e\u0645\u064f \u0645\u064e\u0627 \u0628\u064e\u064a\u0652\u0646\u064e \u0623\u064e\u064a\u0652\u062f\u0650\u064a\u0647\u0650\u0645\u0652 \u0648\u064e\u0645\u064e\u0627 \u062e\u064e\u0644\u0652\u0641\u064e\u0647\u064f\u0645\u0652 \u25aa \u0648\u064e\u0644\u064e\u0627 \u064a\u064f\u062d\u0650\u064a\u0637\u064f\u0648\u0646\u064e \u0628\u0650\u0634\u064e\u064a\u0652\u0621\u0645\u0650 \u0645\u0650\u0651\u0646\u0652 \u0639\u0650\u0644\u0652\u0645\u0650\u0647\u0650 \u0625\u0650\u0644\u064e\u0651\u0627 \u0628\u0650\u0645\u064e\u0627 \u0634\u064e\u0622\u0621\u064e \u25aa \u0648\u064e\u0633\u0650\u0639\u064e \u0643\u064f\u0631\u0652\u0633\u0650\u064a\u064e\u0651\u0647\u064f \u0627\u0644\u0633\u064e\u0651\u0645\u064e\u0670\u0648\u064e\u0670\u062a\u0650 \u0648\u064e\u0627\u0644\u0652\u0623\u064e\u0631\u0652\u0636\u064e \u25aa \u0648\u064e\u0644\u064e\u0627 \u064a\u064e\u0626\u064f\u0648\u062f\u064f\u0647\u064f \u062d\u0650\u0641\u0652\u0638\u064f\u0647\u064f\u0645\u064e\u0627 \u25aa \u0648\u064e\u0647\u064f\u0648\u064e \u0627\u0644\u0652\u0639\u064e\u0644\u0650\u064a\u064e\u0651 \u0627\u0644\u0652\u0639\u064e\u0638\u0650\u064a\u0645\u064f",
+      english: "Allah \u2014 there is no deity except Him, the Ever-Living, the Sustainer of existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth. Who is it that can intercede with Him except by His permission? He knows what is before them and what will be after them, and they encompass not a thing of His knowledge except for what He wills. His Kursi extends over the heavens and the earth, and their preservation tires Him not. And He is the Most High, the Most Great.",
+      ref: "Surah Al-Baqarah \u2014 2:255"
+    },
+    {
+      theme: "Opening of Surah Al-Mulk \u2014 for daily protection",
+      arabic: "\u062a\u064e\u0628\u064e\u0627\u0631\u064e\u0643\u064e \u0627\u0644\u064e\u0651\u0630\u0650\u064a \u0628\u0650\u064a\u064e\u062f\u0650\u0647\u0650 \u0627\u0644\u0652\u0645\u064f\u0644\u0652\u0643\u064f \u0648\u064e\u0647\u064f\u0648\u064e \u0639\u064e\u0644\u064e\u0649\u0670 \u0643\u064f\u0644\u0650\u0651 \u0634\u064e\u064a\u0652\u0621\u0645 \u0642\u064e\u062f\u0650\u064a\u0631\u064c \u25aa \u0627\u0644\u064e\u0651\u0630\u0650\u064a \u062e\u064e\u0644\u064e\u0642\u064e \u0627\u0644\u0652\u0645\u064e\u0648\u0652\u062a\u064e \u0648\u064e\u0627\u0644\u0652\u062d\u064e\u064a\u064e\u0648\u0670\u0629\u064e \u0644\u0650\u064a\u064e\u0628\u0652\u0644\u064f\u0648\u064e\u0643\u064f\u0645\u0652 \u0623\u064e\u064a\u064e\u0651\u0643\u064f\u0645\u0652 \u0623\u064e\u062d\u0652\u0633\u064e\u0646\u064f \u0639\u064e\u0645\u064e\u0644\u064b\u0627 \u25aa \u0648\u064e\u0647\u064f\u0648\u064e \u0627\u0644\u0652\u0639\u064e\u0632\u0650\u064a\u0632\u064f \u0627\u0644\u0652\u063a\u064e\u0641\u064f\u0648\u0631\u064f",
+      english: "Blessed is He in whose hand is dominion, and He is over all things competent \u2014 [He] who created death and life to test you as to which of you is best in deed. And He is the Exalted in Might, the Forgiving.",
+      ref: "Surah Al-Mulk \u2014 67:1\u20132"
+    },
+    {
+      theme: "Opening of Surah Ar-Rahman \u2014 His mercy",
+      arabic: "\u0627\u0644\u0631\u064e\u0651\u062d\u0652\u0645\u064e\u0670\u0646\u064f \u25aa \u0639\u064e\u0644\u064e\u0651\u0645\u064e \u0627\u0644\u0652\u0642\u064f\u0631\u0652\u0622\u0646\u064e \u25aa \u062e\u064e\u0644\u064e\u0642\u064e \u0627\u0644\u0652\u0625\u0650\u0646\u0633\u064e\u0670\u0646\u064e \u25aa \u0639\u064e\u0644\u064e\u0651\u0645\u064e\u0647\u064f \u0627\u0644\u0652\u0628\u064e\u064a\u064e\u0627\u0646\u064e",
+      english: "The Most Merciful. Taught the Quran. Created man. Taught him eloquence.",
+      ref: "Surah Ar-Rahman \u2014 55:1\u20134"
+    },
+    {
+      theme: "Opening of Surah Yaseen",
+      arabic: "\u064a\u0633 \u25aa \u0648\u064e\u0627\u0644\u0652\u0642\u064f\u0631\u0652\u0622\u0646\u0650 \u0627\u0644\u0652\u062d\u064e\u0643\u0650\u064a\u0645\u0650 \u25aa \u0625\u0650\u0646\u064e\u0651\u0643\u064e \u0644\u064e\u0645\u0650\u0646\u064e \u0627\u0644\u0652\u0645\u064f\u0631\u0652\u0633\u064e\u0644\u0650\u064a\u0646\u064e",
+      english: "Ya Sin. By the wise Quran. Indeed you are from among the messengers. (\u2018Ya Sin\u2019 are among the muqatta\u02bfat \u2014 letters whose meaning is known only to Allah.)",
+      ref: "Surah Yaseen \u2014 36:1\u20133"
+    }
+  ];
+
+  let currentVerse = 0;
+
+  function renderVerse() {
+    const v = VERSES[currentVerse];
+    document.getElementById('verse-theme').textContent   = v.theme;
+    document.getElementById('verse-arabic').textContent  = v.arabic;
+    document.getElementById('verse-english').textContent = v.english;
+    document.getElementById('verse-ref').textContent     = v.ref;
+    document.getElementById('verse-counter').textContent = (currentVerse+1) + ' of ' + VERSES.length;
+    // Dots
+    document.getElementById('verse-nav').innerHTML = VERSES.map((_,i) =>
+      '<div class="verse-dot' + (i===currentVerse?' active':'') + '"></div>'
+    ).join('');
+  }
+
+  function nextVerse() {
+    currentVerse = (currentVerse + 1) % VERSES.length;
+    renderVerse();
+  }
+
+
+  // ── SYNC STATUS ───────────────────────────────────────
+  function setSyncStatus(s) {
+    const pill  = document.getElementById('sync-pill');
+    const label = document.getElementById('sync-label');
+    if (!pill || !label) return;
+    pill.className = 'sync-pill ' + s;
+    const labels = {
+      online:  'Synced',
+      syncing: 'Syncing…',
+      offline: 'Offline — saved locally',
+      error:   'Sync error'
+    };
+    label.textContent = labels[s] || s;
+  }
+
+  // ── ROW CONVERTERS ────────────────────────────────────
+  // Translate between JS camelCase objects and Supabase snake_case rows
+  function debtToRow(d) { return { id:d.id, name:d.name, amount:d.amount, target_date:d.targetDate||'', cleared:!!d.cleared }; }
+  function rowToDebt(r) { return { id:r.id, name:r.name, amount:r.amount, targetDate:r.target_date||'', cleared:!!r.cleared }; }
+
+  function spusToRow(e) { return { id:e.id, date:e.date, amount_sgd:e.amountSGD, units:e.units, price_usd:e.priceUSD, notes:e.notes||'' }; }
+  function rowToSpus(r) { return { id:r.id, date:r.date, amountSGD:r.amount_sgd, units:r.units, priceUSD:r.price_usd, notes:r.notes||'' }; }
+
+  function expToRow(e)  { return { id:e.id, date:e.date, month:e.date.slice(0,7), category:e.category, amount:e.amount, description:e.desc||'' }; }
+  function rowToExp(r)  { return { id:r.id, date:r.date, month:r.month, category:r.category, amount:r.amount, desc:r.description||'' }; }
+
+  // ── SYNC DOWN ─────────────────────────────────────────
+  // Pull everything from Supabase → write to localStorage → re-render.
+  // Called once on app load and again when coming back online.
+  async function syncDown() {
+    console.log('[Blueprint sync] syncDown starting, online:', navigator.onLine);
+    if (!navigator.onLine) { setSyncStatus('offline'); return; }
+    setSyncStatus('syncing');
+    try {
+      // Habits (all stored dates)
+      const { data: habits } = await sb.from('habits').select('*');
+      if (habits) {
+        habits.forEach(h => {
+          localStorage.setItem('bp_checkin_' + h.date, JSON.stringify({
+            prayer:!!h.prayer, training:!!h.training, study:!!h.study, parents:!!h.parents
+          }));
+        });
+      }
+
+      // Debts
+      const { data: debts } = await sb.from('debts').select('*');
+      if (debts && debts.length) {
+        // Supabase has data — pull it down
+        localStorage.setItem('bp_debts', JSON.stringify(debts.map(rowToDebt)));
+        localStorage.setItem('bp_debts_seeded_v3', 'true');
+      } else {
+        // Supabase is empty — push whatever is in localStorage (first-time sync)
+        const localDebts = STORE.get('debts', []);
+        if (localDebts.length) {
+          console.log('[Blueprint sync] Supabase debts empty — pushing', localDebts.length, 'local debts');
+          await sb.from('debts').upsert(localDebts.map(debtToRow), { onConflict:'id' });
+        }
+      }
+
+      // Savings
+      const { data: savings } = await sb.from('savings').select('*');
+      if (savings && savings.length) {
+        localStorage.setItem('bp_savings', JSON.stringify(savings.map(r => ({ id:r.id, name:r.name, balance:r.balance, target:r.target }))));
+        localStorage.setItem('bp_savings_seeded_v1', 'true');
+      } else {
+        const localSavings = STORE.get('savings', []);
+        if (localSavings.length) {
+          console.log('[Blueprint sync] Supabase savings empty — pushing', localSavings.length, 'local buckets');
+          await sb.from('savings').upsert(localSavings.map(s => ({ id:s.id, name:s.name, balance:s.balance, target:s.target })), { onConflict:'id' });
+        }
+      }
+
+      // SPUS entries + settings
+      const { data: spusEntries } = await sb.from('spus_entries').select('*').order('date', { ascending:true });
+      if (spusEntries && spusEntries.length) {
+        localStorage.setItem('bp_spus_log', JSON.stringify(spusEntries.map(rowToSpus)));
+      } else {
+        const localSpus = STORE.get('spus_log', []);
+        if (localSpus.length) await sb.from('spus_entries').upsert(localSpus.map(spusToRow), { onConflict:'id' });
+      }
+
+      const { data: spusSettings } = await sb.from('spus_settings').select('*');
+      if (spusSettings) spusSettings.forEach(s => {
+        if (s.key === 'price') localStorage.setItem('bp_spus_price', JSON.stringify(s.value));
+        if (s.key === 'rate')  localStorage.setItem('bp_spus_rate',  JSON.stringify(s.value));
+      });
+
+      // Expenses (all months)
+      const { data: expenses } = await sb.from('expenses').select('*').order('date', { ascending:false });
+      if (expenses) {
+        const byMonth = {};
+        expenses.forEach(e => {
+          const m = e.month || e.date.slice(0,7);
+          if (!byMonth[m]) byMonth[m] = [];
+          byMonth[m].push(rowToExp(e));
+        });
+        Object.entries(byMonth).forEach(([m, es]) => localStorage.setItem('bp_expenses_' + m, JSON.stringify(es)));
+      }
+
+      // IPPT (single row)
+      const { data: ippt } = await sb.from('ippt').select('*').eq('id', 1).maybeSingle();
+      if (ippt && ippt.saved_at) {
+        localStorage.setItem('bp_ippt', JSON.stringify({
+          pushup: ippt.pushup||'', situp: ippt.situp||'', run: ippt.run||'', savedAt: ippt.saved_at
+        }));
+      } else {
+        const localIppt = STORE.get('ippt', null);
+        if (localIppt && localIppt.savedAt) {
+          await sb.from('ippt').upsert({ id:1, pushup:localIppt.pushup||null, situp:localIppt.situp||null, run:localIppt.run||null, saved_at:localIppt.savedAt }, { onConflict:'id' });
+        }
+      }
+
+      // Clear dirty queue — everything is now in sync
+      localStorage.removeItem('bp__dirty');
+      setSyncStatus('online');
+    } catch(err) {
+      console.error('syncDown error:', err);
+      setSyncStatus('error');
+    }
+  }
+
+  // ── SYNC UP ───────────────────────────────────────────
+  // Push one localStorage key → Supabase.
+  // Called automatically by STORE.set.
+  // If offline: queues the key in bp__dirty for later.
+  async function _syncUp(key, val) {
+    console.log('[Blueprint sync] _syncUp called:', key);
+    if (!navigator.onLine) {
+      // Queue for when we're back online
+      const dirty = JSON.parse(localStorage.getItem('bp__dirty') || '[]');
+      if (!dirty.includes(key)) { dirty.push(key); localStorage.setItem('bp__dirty', JSON.stringify(dirty)); }
+      setSyncStatus('offline');
+      return;
+    }
+    try {
+      if (key.startsWith('checkin_')) {
+        const date = key.slice(8); // strip 'checkin_'
+        await sb.from('habits').upsert(
+          { date, prayer:!!val.prayer, training:!!val.training, study:!!val.study, parents:!!val.parents },
+          { onConflict:'date' }
+        );
+
+      } else if (key === 'debts') {
+        if (val.length) await sb.from('debts').upsert(val.map(debtToRow), { onConflict:'id' });
+        // Delete rows that no longer exist in the local array
+        const { data: dbRows } = await sb.from('debts').select('id');
+        if (dbRows) {
+          const keep = new Set(val.map(d => d.id));
+          const del  = dbRows.filter(r => !keep.has(r.id)).map(r => r.id);
+          if (del.length) await sb.from('debts').delete().in('id', del);
+        }
+
+      } else if (key === 'savings') {
+        if (val.length) await sb.from('savings').upsert(
+          val.map(s => ({ id:s.id, name:s.name, balance:s.balance, target:s.target })),
+          { onConflict:'id' }
+        );
+        const { data: dbRows } = await sb.from('savings').select('id');
+        if (dbRows) {
+          const keep = new Set(val.map(s => s.id));
+          const del  = dbRows.filter(r => !keep.has(r.id)).map(r => r.id);
+          if (del.length) await sb.from('savings').delete().in('id', del);
+        }
+
+      } else if (key === 'spus_log') {
+        if (val.length) await sb.from('spus_entries').upsert(val.map(spusToRow), { onConflict:'id' });
+        const { data: dbRows } = await sb.from('spus_entries').select('id');
+        if (dbRows) {
+          const keep = new Set(val.map(e => e.id));
+          const del  = dbRows.filter(r => !keep.has(r.id)).map(r => r.id);
+          if (del.length) await sb.from('spus_entries').delete().in('id', del);
+        }
+
+      } else if (key === 'spus_price') {
+        await sb.from('spus_settings').upsert({ key:'price', value:val }, { onConflict:'key' });
+
+      } else if (key === 'spus_rate') {
+        await sb.from('spus_settings').upsert({ key:'rate', value:val }, { onConflict:'key' });
+
+      } else if (key === 'ippt') {
+        await sb.from('ippt').upsert(
+          { id:1, pushup:val.pushup||null, situp:val.situp||null, run:val.run||null, saved_at:val.savedAt||null },
+          { onConflict:'id' }
+        );
+
+      } else if (key.startsWith('expenses_')) {
+        const month = key.slice(9); // strip 'expenses_'
+        if (val.length) await sb.from('expenses').upsert(val.map(expToRow), { onConflict:'id' });
+        const { data: dbRows } = await sb.from('expenses').select('id').eq('month', month);
+        if (dbRows) {
+          const keep = new Set(val.map(e => e.id));
+          const del  = dbRows.filter(r => !keep.has(r.id)).map(r => r.id);
+          if (del.length) await sb.from('expenses').delete().in('id', del);
+        }
+      }
+
+      // Remove from dirty queue if present
+      const dirty = JSON.parse(localStorage.getItem('bp__dirty') || '[]');
+      const cleaned = dirty.filter(k => k !== key);
+      if (cleaned.length !== dirty.length) localStorage.setItem('bp__dirty', JSON.stringify(cleaned));
+
+      setSyncStatus('online');
+    } catch(err) {
+      console.error('[Blueprint sync] _syncUp ERROR for key ' + key + ':', err);
+      setSyncStatus('error');
+    }
+  }
+
+  // ── SYNC DIRTY ────────────────────────────────────────
+  // Called when device comes back online.
+  // Pushes any writes that happened while offline.
+  async function syncDirty() {
+    const dirty = JSON.parse(localStorage.getItem('bp__dirty') || '[]');
+    if (!dirty.length) { setSyncStatus('online'); return; }
+    setSyncStatus('syncing');
+    for (const key of dirty) {
+      const raw = localStorage.getItem('bp_' + key);
+      if (raw) {
+        try { await _syncUp(key, JSON.parse(raw)); } catch(e) { console.error('syncDirty error:', e); }
+      }
+    }
+  }
+
+  // INIT
+  updateCountdown(); setInterval(updateCountdown, 60000);
+  renderPhase(); renderUrgentCard(); renderFocusCard(); renderWorkout();
+
+  // ── Step 1: Render immediately from localStorage (instant, offline-safe) ──
+  seedDebts(); seedSavings();
+  renderCheckin(); renderIPPT(); initPlanPage();
+  renderSPUSTab(); renderDebtsTab(); renderSavingsTab();
+  renderExpensesTab(); renderVerse(); renderNetWorth();
+
+  // ── Step 2: Sync from Supabase, then re-render with fresh data ──
+  syncDown().then(() => {
+    seedDebts(); seedSavings();
+    renderCheckin(); renderIPPT();
+    renderSPUSTab(); renderDebtsTab(); renderSavingsTab();
+    renderExpensesTab(); renderNetWorth();
+  });
+
+  // ── Online/offline detection ──
+  window.addEventListener('online',  () => {
+    setSyncStatus('syncing');
+    syncDirty().then(() => setSyncStatus('online'));
+  });
+  window.addEventListener('offline', () => setSyncStatus('offline'));
+</script>
+</body>
+</html>
